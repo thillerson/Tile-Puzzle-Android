@@ -3,11 +3,10 @@ package com.tackmobile;
 import roboguice.activity.RoboActivity;
 import roboguice.inject.InjectView;
 import android.os.Bundle;
-import android.view.SurfaceView;
 
 public class SliderPuzzleActivity extends RoboActivity {
 	
-	@InjectView(R.id.surface) SurfaceView surface;
+	@InjectView(R.id.gameboard) GameboardView gameboard;
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
