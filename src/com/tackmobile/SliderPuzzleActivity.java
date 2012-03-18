@@ -1,10 +1,14 @@
 package com.tackmobile;
 
-import android.app.Activity;
+import roboguice.activity.RoboActivity;
+import roboguice.inject.InjectView;
 import android.os.Bundle;
+import android.view.SurfaceView;
 
-public class SliderPuzzleActivity extends Activity {
-    /** Called when the activity is first created. */
+public class SliderPuzzleActivity extends RoboActivity {
+	
+	@InjectView(R.id.surface) SurfaceView surface;
+	
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
