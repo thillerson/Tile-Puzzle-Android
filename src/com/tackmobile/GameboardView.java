@@ -4,12 +4,11 @@ import java.util.HashSet;
 
 import roboguice.util.Ln;
 import android.content.Context;
-import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.util.AttributeSet;
-import android.view.View;
+import android.widget.RelativeLayout;
 
-public class GameboardView extends View {
+public class GameboardView extends RelativeLayout {
 	
 	protected Size tileSize;
 	protected Rect gameboardRect;
@@ -17,29 +16,28 @@ public class GameboardView extends View {
 
 	public GameboardView(Context context, AttributeSet attrSet) {
 		super(context, attrSet);
+		createTiles();
 	}
 	
 	@Override
 	protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
 		super.onLayout(changed, left, top, right, bottom);
 		determineGameboardSizes();
+		placeTiles();
 	}
 
-	@Override
-	protected void onDraw(Canvas canvas) {
-		super.onDraw(canvas);
-		drawTiles(canvas);
-	}
-	
-	protected void drawTiles(Canvas canvas) {
+	protected void placeTiles() {
 		for (GameTile tile : tiles) {
-			placeTile(tile, canvas);
+			placeTile(tile);
 		}
 	}
 	
-	protected void placeTile(GameTile tile, Canvas canvas) {
-		tile.setBounds(rectForCoordinate(tile.coordinate));
-		tile.draw(canvas);
+	protected void placeTile(GameTile tile) {
+		Rect tileRect = rectForCoordinate(tile.coordinate);
+		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(tileSize.width, tileSize.height);
+		params.topMargin = tileRect.top;
+		params.leftMargin = tileRect.left;
+		addView(tile, params);
 	}
 
 	protected void createTiles() {
@@ -52,7 +50,7 @@ public class GameboardView extends View {
 	}
 
 	protected void createTileAtCoordinate(Coordinate coordinate) {
-		tiles.add(new GameTile(coordinate));
+		tiles.add(new GameTile(getContext(), coordinate));
 	}
 
 	protected void determineGameboardSizes() {
