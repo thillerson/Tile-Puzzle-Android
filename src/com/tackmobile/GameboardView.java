@@ -6,9 +6,12 @@ import roboguice.util.Ln;
 import android.content.Context;
 import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnTouchListener;
 import android.widget.RelativeLayout;
 
-public class GameboardView extends RelativeLayout {
+public class GameboardView extends RelativeLayout implements OnTouchListener {
 	
 	protected Size tileSize;
 	protected Rect gameboardRect;
@@ -54,9 +57,25 @@ public class GameboardView extends RelativeLayout {
 		}
 	}
 
+	public boolean onTouch(View v, MotionEvent event) {
+		try {
+			GameTile touchedTile = (GameTile)v;
+			Ln.d("%s\n\tTile touched: %s", touchedTile, event);
+			if (touchedTile.isEmpty() || !touchedTile.isInRowOrColumnOf(emptyTile)) {
+				Ln.d("Empty or immovable tile; ignoring");
+				return false;
+			} else {
+				return true;
+			}
+		} catch (ClassCastException e) {
+			return false;
+		}
+	}
+
 	protected GameTile createTileAtCoordinate(Coordinate coordinate) {
 		GameTile tile = new GameTile(getContext(), coordinate);
 		tiles.add(tile);
+		tile.setOnTouchListener(this);
 		return tile;
 	}
 
@@ -100,6 +119,10 @@ public class GameboardView extends RelativeLayout {
 		public Coordinate(int row, int column) {
 			this.row = row;
 			this.column = column;
+		}
+
+		public boolean sharesAxisWith(Coordinate coordinate) {
+			return (row == coordinate.row || column == coordinate.column);
 		}
 
 	}
