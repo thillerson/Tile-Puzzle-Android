@@ -1,5 +1,7 @@
 package com.tackmobile;
 
+import roboguice.util.Ln;
+
 import com.tackmobile.GameboardView.Coordinate;
 
 import android.content.Context;
@@ -7,6 +9,7 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RoundRectShape;
+import android.view.MotionEvent;
 import android.view.View;
 
 public class GameTile extends View {
@@ -23,6 +26,12 @@ public class GameTile extends View {
 		setBackgroundDrawable(drawable);
 	}
 	
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		Ln.d("%s\n\trecieved touch event: %s", this, event);
+		return super.onTouchEvent(event);
+	}
+
 	@Override
 	public String toString() {
 		return String.format("<GameTile at row: %d, col: %d", coordinate.row, coordinate.column);
