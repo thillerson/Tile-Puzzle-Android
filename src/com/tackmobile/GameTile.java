@@ -16,6 +16,7 @@ public class GameTile extends View {
 	
 	protected Drawable drawable;
 	public Coordinate coordinate;
+	protected boolean empty; 
 
 	public GameTile(Context context, Coordinate coordinate) {
 		super(context);
@@ -35,6 +36,15 @@ public class GameTile extends View {
 	@Override
 	public String toString() {
 		return String.format("<GameTile at row: %d, col: %d", coordinate.row, coordinate.column);
+	}
+
+	public boolean isEmpty() {
+		return empty;
+	}
+
+	public void setEmpty(boolean empty) {
+		this.empty = empty;
+		if (empty) setBackgroundDrawable(null);
 	}
 
 }

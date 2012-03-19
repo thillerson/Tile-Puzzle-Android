@@ -13,6 +13,7 @@ public class GameboardView extends RelativeLayout {
 	protected Size tileSize;
 	protected Rect gameboardRect;
 	protected HashSet<GameTile> tiles;
+	protected GameTile emptyTile;
 
 	public GameboardView(Context context, AttributeSet attrSet) {
 		super(context, attrSet);
@@ -44,13 +45,19 @@ public class GameboardView extends RelativeLayout {
 		tiles = new HashSet<GameTile>();
 		for (int rowI=0; rowI<4; rowI++) {
 			for (int colI=0; colI<4; colI++) {
-				createTileAtCoordinate( new Coordinate(rowI, colI) );
+				GameTile tile = createTileAtCoordinate( new Coordinate(rowI, colI) );
+				if (rowI == 3 && colI == 3) {
+					emptyTile = tile;
+					tile.setEmpty(true);
+				}
 			}
 		}
 	}
 
-	protected void createTileAtCoordinate(Coordinate coordinate) {
-		tiles.add(new GameTile(getContext(), coordinate));
+	protected GameTile createTileAtCoordinate(Coordinate coordinate) {
+		GameTile tile = new GameTile(getContext(), coordinate);
+		tiles.add(tile);
+		return tile;
 	}
 
 	protected void determineGameboardSizes() {
