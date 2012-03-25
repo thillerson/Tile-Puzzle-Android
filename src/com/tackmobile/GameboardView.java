@@ -155,5 +155,28 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		}
 
 	}
+	
+	public class GameTileMotionDescriptor {
+		
+		public GameTile tile;
+		public int fromX, toX, fromY, toY;
+		
+		public GameTileMotionDescriptor(GameTile tile, int fromX, int toX, int fromY, int toY) {
+			super();
+			this.tile = tile;
+			this.fromX = fromX;
+			this.toX = toX;
+			this.fromY = fromY;
+			this.toY = toY;
+		}
+		
+		@Override
+		public String toString() {
+			return "GameTileMotionDescriptor [tile=" + tile + ", fromX="
+					+ fromX + ", toX=" + toX + ", fromY=" + fromY + ", toY="
+					+ toY + "]";
+		}
+		
+	}
 
 }
