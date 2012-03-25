@@ -1,5 +1,6 @@
 package com.tackmobile;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 
 import roboguice.util.Ln;
@@ -9,6 +10,9 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
+import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
+import android.view.animation.TranslateAnimation;
 import android.widget.RelativeLayout;
 
 public class GameboardView extends RelativeLayout implements OnTouchListener {
@@ -47,6 +51,11 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		params.topMargin = tileRect.top;
 		params.leftMargin = tileRect.left;
 		addView(tile, params);
+		// And why the hell doesn't adding a tile to the view update the tile's top and left?
+		// Perhaps we'll never know.
+		tile.setTop(tileRect.top);
+		tile.setLeft(tileRect.left);
+		Ln.d("Added tile: %s", tile);
 	}
 
 	protected void createTiles() {
@@ -76,6 +85,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 					if (lastMoveWasDrag) {
 						
 					} else {
+						animateTilesToEmptySpaceStartingWith(movedTile);
 					}
 					lastMoveWasDrag = false;
 					movedTile = null;
@@ -84,6 +94,37 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			}
 		} catch (ClassCastException e) {
 			return false;
+		}
+	}
+
+	private void animateTilesToEmptySpaceStartingWith(GameTile tile) {
+		ArrayList<GameTileMotionDescriptor> motionDescriptors = getTilesBetweenEmptyTileAndTile(tile);
+		TranslateAnimation animation;
+		emptyTile.setLayoutParams(tile.getLayoutParams());
+		emptyTile.setLeft(tile.getLeft());
+		emptyTile.setTop(tile.getTop());
+		for (final GameTileMotionDescriptor motionDescriptor : motionDescriptors) {
+			Ln.d("Starting animation: %s", motionDescriptor);
+			animation = new TranslateAnimation(
+					Animation.ABSOLUTE, motionDescriptor.fromX,
+					Animation.ABSOLUTE, motionDescriptor.toX,
+					Animation.ABSOLUTE, motionDescriptor.fromY,
+					Animation.ABSOLUTE, motionDescriptor.toY);
+			animation.setFillAfter(true);
+			animation.setFillEnabled(true);
+			animation.setAnimationListener(new AnimationListener() {
+				
+				public void onAnimationStart(Animation animation) {
+					Ln.d("Starting animation: %s", motionDescriptor.tile);
+				}
+				
+				public void onAnimationRepeat(Animation animation) { }
+				
+				public void onAnimationEnd(Animation animation) {
+					Ln.d("Ending animation: %s", motionDescriptor.tile);
+				}
+			});
+			tile.startAnimation(animation);
 		}
 	}
 
