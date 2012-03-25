@@ -45,4 +45,20 @@ public class GameTile extends View {
 		return (coordinate.sharesAxisWith(otherTile.coordinate));
 	}
 
+	public boolean isToRightOf(GameTile tile) {
+		return coordinate.isToRightOf(tile.coordinate);
+	}
+
+	public boolean isToLeftOf(GameTile tile) {
+		return coordinate.isToLeftOf(tile.coordinate);
+	}
+
+	public boolean isAbove(GameTile tile) {
+		return coordinate.isAbove(tile.coordinate);
+	}
+
+	public boolean isBelow(GameTile tile) {
+		return coordinate.isBelow(tile.coordinate);
+	}
+
 }
