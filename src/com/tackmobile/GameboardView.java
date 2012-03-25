@@ -4,15 +4,16 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 import roboguice.util.Ln;
+import android.animation.Animator;
+import android.animation.Animator.AnimatorListener;
+import android.animation.FloatEvaluator;
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
-import android.view.animation.Animation;
-import android.view.animation.Animation.AnimationListener;
-import android.view.animation.TranslateAnimation;
 import android.widget.RelativeLayout;
 
 public class GameboardView extends RelativeLayout implements OnTouchListener {
@@ -31,6 +32,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	
 	@Override
 	protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+		Ln.d("On Layout");
 		super.onLayout(changed, left, top, right, bottom);
 		if (!boardCreated) {
 			determineGameboardSizes();
@@ -51,11 +53,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		params.topMargin = tileRect.top;
 		params.leftMargin = tileRect.left;
 		addView(tile, params);
-		// And why the hell doesn't adding a tile to the view update the tile's top and left?
-		// Perhaps we'll never know.
-		tile.setTop(tileRect.top);
-		tile.setLeft(tileRect.left);
-		Ln.d("Added tile: %s", tile);
 	}
 
 	protected void createTiles() {
@@ -99,38 +96,38 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 
 	private void animateTilesToEmptySpaceStartingWith(GameTile tile) {
 		ArrayList<GameTileMotionDescriptor> motionDescriptors = getTilesBetweenEmptyTileAndTile(tile);
-		TranslateAnimation animation;
-		emptyTile.setLayoutParams(tile.getLayoutParams());
-		emptyTile.setLeft(tile.getLeft());
-		emptyTile.setTop(tile.getTop());
+		emptyTile.setX(tile.getX());
+		emptyTile.setY(tile.getY());
+		emptyTile.coordinate = tile.coordinate;
+		ObjectAnimator animator;
 		for (final GameTileMotionDescriptor motionDescriptor : motionDescriptors) {
 			Ln.d("Starting animation: %s", motionDescriptor);
-			animation = new TranslateAnimation(
-					Animation.ABSOLUTE, motionDescriptor.fromX,
-					Animation.ABSOLUTE, motionDescriptor.toX,
-					Animation.ABSOLUTE, motionDescriptor.fromY,
-					Animation.ABSOLUTE, motionDescriptor.toY);
-			animation.setFillAfter(true);
-			animation.setFillEnabled(true);
-			animation.setAnimationListener(new AnimationListener() {
+			animator = ObjectAnimator.ofObject(
+						motionDescriptor.tile,
+						motionDescriptor.property,
+						new FloatEvaluator(),
+						motionDescriptor.from,
+						motionDescriptor.to);
+			animator.addListener(new AnimatorListener() {
 				
-				public void onAnimationStart(Animation animation) {
-					Ln.d("Starting animation: %s", motionDescriptor.tile);
-				}
+				public void onAnimationStart(Animator animation) { }
+				public void onAnimationCancel(Animator animation) { }
+				public void onAnimationRepeat(Animator animation) { }
 				
-				public void onAnimationRepeat(Animation animation) { }
-				
-				public void onAnimationEnd(Animation animation) {
-					Ln.d("Ending animation: %s", motionDescriptor.tile);
+				public void onAnimationEnd(Animator animation) {
+					motionDescriptor.tile.coordinate = motionDescriptor.finalCoordinate;
+					motionDescriptor.tile.setX(motionDescriptor.finalRect.left);
+					motionDescriptor.tile.setY(motionDescriptor.finalRect.top);
+					Ln.d("Animation complete: %s", motionDescriptor);
 				}
 			});
-			tile.startAnimation(animation);
+			animator.start();
 		}
 	}
 
 	private ArrayList<GameTileMotionDescriptor> getTilesBetweenEmptyTileAndTile(GameTile tile) {
 		ArrayList<GameTileMotionDescriptor> descriptors = new ArrayList<GameTileMotionDescriptor>();
-		Coordinate coordinate;
+		Coordinate coordinate, finalCoordinate;
 		GameTile foundTile;
 		GameTileMotionDescriptor motionDescriptor;
 		Rect rect;
@@ -139,14 +136,16 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			for (int i = tile.coordinate.column; i > emptyTile.coordinate.column; i--) {
 				coordinate = new Coordinate(tile.coordinate.row, i);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
-				rect = rectForCoordinate(new Coordinate(tile.coordinate.row, i-1));
+				finalCoordinate = new Coordinate(tile.coordinate.row, i-1);
+				rect = rectForCoordinate(finalCoordinate);
 				motionDescriptor = new GameTileMotionDescriptor(
 							foundTile,
-							foundTile.getLeft(),
-							rect.left,
-							foundTile.getTop(),
-							rect.top
+							"x",
+							foundTile.getX(),
+							rect.left
 						);
+				motionDescriptor.finalCoordinate = finalCoordinate;
+				motionDescriptor.finalRect = rect;
 				descriptors.add(motionDescriptor);
 			}
 		} else if (tile.isToLeftOf(emptyTile)) {
@@ -154,14 +153,16 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			for (int i = tile.coordinate.column; i < emptyTile.coordinate.column; i++) {
 				coordinate = new Coordinate(tile.coordinate.row, i);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
-				rect = rectForCoordinate(new Coordinate(tile.coordinate.row, i+1));
+				finalCoordinate = new Coordinate(tile.coordinate.row, i+1);
+				rect = rectForCoordinate(finalCoordinate);
 				motionDescriptor = new GameTileMotionDescriptor(
 							foundTile,
-							foundTile.getLeft(),
-							rect.left,
-							foundTile.getTop(),
-							rect.top
+							"x",
+							foundTile.getX(),
+							rect.left
 						);
+				motionDescriptor.finalCoordinate = finalCoordinate;
+				motionDescriptor.finalRect = rect;
 				descriptors.add(motionDescriptor);
 			}
 		} else if (tile.isAbove(emptyTile)) {
@@ -169,14 +170,16 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			for (int i = tile.coordinate.row; i < emptyTile.coordinate.row; i++) {
 				coordinate = new Coordinate(i, tile.coordinate.column);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
-				rect = rectForCoordinate(new Coordinate(i+1, tile.coordinate.column));
+				finalCoordinate = new Coordinate(i+1, tile.coordinate.column); 
+				rect = rectForCoordinate(finalCoordinate);
 				motionDescriptor = new GameTileMotionDescriptor(
 							foundTile,
-							foundTile.getLeft(),
-							rect.left,
-							foundTile.getTop(),
+							"y",
+							foundTile.getY(),
 							rect.top
 						);
+				motionDescriptor.finalCoordinate = finalCoordinate;
+				motionDescriptor.finalRect = rect;
 				descriptors.add(motionDescriptor);
 			}
 		} else if (tile.isBelow(emptyTile)) {
@@ -184,14 +187,16 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			for (int i = tile.coordinate.row; i > emptyTile.coordinate.row; i--) {
 				coordinate = new Coordinate(i, tile.coordinate.column);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
-				rect = rectForCoordinate(new Coordinate(i-1, tile.coordinate.column));
+				finalCoordinate = new Coordinate(i-1, tile.coordinate.column);
+				rect = rectForCoordinate(finalCoordinate);
 				motionDescriptor = new GameTileMotionDescriptor(
 							foundTile,
-							foundTile.getLeft(),
-							rect.left,
-							foundTile.getTop(),
+							"y",
+							foundTile.getY(),
 							rect.top
 						);
+				motionDescriptor.finalCoordinate = finalCoordinate;
+				motionDescriptor.finalRect = rect;
 				descriptors.add(motionDescriptor);
 			}
 		}
@@ -291,23 +296,24 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	
 	public class GameTileMotionDescriptor {
 		
+		public Rect finalRect;
+		public String property;
 		public GameTile tile;
-		public int fromX, toX, fromY, toY;
+		public float from, to;
+		public Coordinate finalCoordinate;
 		
-		public GameTileMotionDescriptor(GameTile tile, int fromX, int toX, int fromY, int toY) {
+		public GameTileMotionDescriptor(GameTile tile, String property, float from, float to) {
 			super();
 			this.tile = tile;
-			this.fromX = fromX;
-			this.toX = toX;
-			this.fromY = fromY;
-			this.toY = toY;
+			this.from = from;
+			this.to = to;
+			this.property = property;
 		}
-		
+
 		@Override
 		public String toString() {
-			return "GameTileMotionDescriptor [tile=" + tile + ", fromX="
-					+ fromX + ", toX=" + toX + ", fromY=" + fromY + ", toY="
-					+ toY + "]";
+			return "GameTileMotionDescriptor [property=" + property + ", tile="
+					+ tile + ", from=" + from + ", to=" + to + "]";
 		}
 		
 	}
