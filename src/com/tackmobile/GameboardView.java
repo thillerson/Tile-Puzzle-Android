@@ -16,8 +16,9 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	protected Size tileSize;
 	protected Rect gameboardRect;
 	protected HashSet<GameTile> tiles;
-	protected GameTile emptyTile;
+	protected GameTile emptyTile, movedTile;
 	private boolean boardCreated;
+	private boolean lastMoveWasDrag;
 
 	public GameboardView(Context context, AttributeSet attrSet) {
 		super(context, attrSet);
@@ -69,6 +70,16 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				Ln.d("Empty or immovable tile; ignoring");
 				return false;
 			} else {
+				if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+					movedTile = touchedTile;
+				} else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+					if (lastMoveWasDrag) {
+						
+					} else {
+					}
+					lastMoveWasDrag = false;
+					movedTile = null;
+				}
 				return true;
 			}
 		} catch (ClassCastException e) {
