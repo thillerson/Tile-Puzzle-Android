@@ -76,6 +76,87 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		}
 	}
 
+	private ArrayList<GameTileMotionDescriptor> getTilesBetweenEmptyTileAndTile(GameTile tile) {
+		ArrayList<GameTileMotionDescriptor> descriptors = new ArrayList<GameTileMotionDescriptor>();
+		Coordinate coordinate;
+		GameTile foundTile;
+		GameTileMotionDescriptor motionDescriptor;
+		Rect rect;
+		if (tile.isToRightOf(emptyTile)) {
+			Ln.d("To right of empty tile");
+			for (int i = tile.coordinate.column; i > emptyTile.coordinate.column; i--) {
+				coordinate = new Coordinate(tile.coordinate.row, i);
+				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
+				rect = rectForCoordinate(new Coordinate(tile.coordinate.row, i-1));
+				motionDescriptor = new GameTileMotionDescriptor(
+							foundTile,
+							foundTile.getLeft(),
+							rect.left,
+							foundTile.getTop(),
+							rect.top
+						);
+				descriptors.add(motionDescriptor);
+			}
+		} else if (tile.isToLeftOf(emptyTile)) {
+			Ln.d("To left of empty tile");
+			for (int i = tile.coordinate.column; i < emptyTile.coordinate.column; i++) {
+				coordinate = new Coordinate(tile.coordinate.row, i);
+				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
+				rect = rectForCoordinate(new Coordinate(tile.coordinate.row, i+1));
+				motionDescriptor = new GameTileMotionDescriptor(
+							foundTile,
+							foundTile.getLeft(),
+							rect.left,
+							foundTile.getTop(),
+							rect.top
+						);
+				descriptors.add(motionDescriptor);
+			}
+		} else if (tile.isAbove(emptyTile)) {
+			Ln.d("Above empty tile");
+			for (int i = tile.coordinate.row; i < emptyTile.coordinate.row; i++) {
+				coordinate = new Coordinate(i, tile.coordinate.column);
+				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
+				rect = rectForCoordinate(new Coordinate(i+1, tile.coordinate.column));
+				motionDescriptor = new GameTileMotionDescriptor(
+							foundTile,
+							foundTile.getLeft(),
+							rect.left,
+							foundTile.getTop(),
+							rect.top
+						);
+				descriptors.add(motionDescriptor);
+			}
+		} else if (tile.isBelow(emptyTile)) {
+			Ln.d("Below empty tile");
+			for (int i = tile.coordinate.row; i > emptyTile.coordinate.row; i--) {
+				coordinate = new Coordinate(i, tile.coordinate.column);
+				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
+				rect = rectForCoordinate(new Coordinate(i-1, tile.coordinate.column));
+				motionDescriptor = new GameTileMotionDescriptor(
+							foundTile,
+							foundTile.getLeft(),
+							rect.left,
+							foundTile.getTop(),
+							rect.top
+						);
+				descriptors.add(motionDescriptor);
+			}
+		}
+		return descriptors;
+	}
+	
+	protected GameTile getTileAtCoordinate(Coordinate coordinate) {
+		Ln.d("Finding tile at %s", coordinate);
+		for (GameTile tile : tiles) {
+			if (tile.coordinate.matches(coordinate)) {
+				Ln.d("Found tile %s", tile);
+				return tile;
+			}
+		}
+		return null;
+	}
+
 	protected GameTile createTileAtCoordinate(Coordinate coordinate) {
 		GameTile tile = new GameTile(getContext(), coordinate);
 		tiles.add(tile);
