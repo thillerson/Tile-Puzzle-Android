@@ -26,7 +26,7 @@ public class GameTile extends View {
 	
 	@Override
 	public String toString() {
-		return String.format("<GameTile at row: %d, col: %d", coordinate.row, coordinate.column);
+		return String.format("<GameTile at row: %d, col: %d, x: %f, y: %f", coordinate.row, coordinate.column, getX(), getY());
 	}
 
 	public boolean isEmpty() {
