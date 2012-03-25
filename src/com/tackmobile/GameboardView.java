@@ -17,6 +17,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	protected Rect gameboardRect;
 	protected HashSet<GameTile> tiles;
 	protected GameTile emptyTile;
+	private boolean boardCreated;
 
 	public GameboardView(Context context, AttributeSet attrSet) {
 		super(context, attrSet);
@@ -26,8 +27,11 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	@Override
 	protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
 		super.onLayout(changed, left, top, right, bottom);
-		determineGameboardSizes();
-		placeTiles();
+		if (!boardCreated) {
+			determineGameboardSizes();
+			placeTiles();
+			boardCreated = true;
+		}
 	}
 
 	protected void placeTiles() {
