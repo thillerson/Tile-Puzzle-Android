@@ -35,7 +35,10 @@ public class GameTile extends View {
 
 	public void setEmpty(boolean empty) {
 		this.empty = empty;
-		if (empty) setBackgroundDrawable(null);
+		if (empty) {
+			setBackgroundDrawable(null);
+			setAlpha(0);
+		}
 	}
 
 	public boolean isInRowOrColumnOf(GameTile otherTile) {
