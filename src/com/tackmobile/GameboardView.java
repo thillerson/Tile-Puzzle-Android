@@ -9,7 +9,10 @@ import android.animation.Animator.AnimatorListener;
 import android.animation.FloatEvaluator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -24,15 +27,19 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	protected GameTile emptyTile, movedTile;
 	private boolean boardCreated;
 	private boolean lastMoveWasDrag;
-
+	private TileServer tileServer;
+	
 	public GameboardView(Context context, AttributeSet attrSet) {
 		super(context, attrSet);
+		Drawable globe = getResources().getDrawable(R.drawable.globe);
+		Bitmap original = ((BitmapDrawable)globe).getBitmap();
+		tileServer = new TileServer(original, 4, 4, 68);
+		
 		createTiles();
 	}
 	
 	@Override
 	protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-		Ln.d("On Layout");
 		super.onLayout(changed, left, top, right, bottom);
 		if (!boardCreated) {
 			determineGameboardSizes();
@@ -53,6 +60,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		params.topMargin = tileRect.top;
 		params.leftMargin = tileRect.left;
 		addView(tile, params);
+		tile.setImageBitmap(tileServer.serveRandomSlice());
 	}
 
 	protected void createTiles() {
@@ -60,6 +68,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		for (int rowI=0; rowI<4; rowI++) {
 			for (int colI=0; colI<4; colI++) {
 				GameTile tile = createTileAtCoordinate( new Coordinate(rowI, colI) );
+				
 				if (rowI == 3 && colI == 3) {
 					emptyTile = tile;
 					tile.setEmpty(true);
