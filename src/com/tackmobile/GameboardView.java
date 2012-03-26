@@ -10,6 +10,7 @@ import android.animation.FloatEvaluator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -27,6 +28,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	protected GameTile emptyTile, movedTile;
 	private boolean boardCreated;
 	private boolean lastMoveWasDrag;
+	private PointF lastDragPoint;
 	private TileServer tileServer;
 	
 	public GameboardView(Context context, AttributeSet attrSet) {
@@ -68,7 +70,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		for (int rowI=0; rowI<4; rowI++) {
 			for (int colI=0; colI<4; colI++) {
 				GameTile tile = createTileAtCoordinate( new Coordinate(rowI, colI) );
-				
 				if (rowI == 3 && colI == 3) {
 					emptyTile = tile;
 					tile.setEmpty(true);
@@ -87,6 +88,14 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			} else {
 				if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
 					movedTile = touchedTile;
+				} else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
+					lastMoveWasDrag = true;
+					if (lastDragPoint != null) {
+						moveDraggedTilesByMotionEventDelta(event);
+						lastDragPoint = new PointF(event.getRawX(), event.getRawY());
+					} else {
+						lastDragPoint = new PointF(event.getRawX(), event.getRawY());
+					}
 				} else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
 					if (lastMoveWasDrag) {
 						
@@ -94,6 +103,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 						animateTilesToEmptySpaceStartingWith(movedTile);
 					}
 					lastMoveWasDrag = false;
+					lastDragPoint = null;
 					movedTile = null;
 				}
 				return true;
@@ -101,6 +111,15 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		} catch (ClassCastException e) {
 			return false;
 		}
+	}
+
+	protected void moveDraggedTilesByMotionEventDelta(MotionEvent event) {
+		float dxEvent = lastDragPoint.x - event.getRawX();
+		float dyEvent = lastDragPoint.y - event.getRawY();
+		float dxTile = movedTile.getX() - dxEvent;
+		float dyTile = movedTile.getY() - dyEvent;
+		movedTile.setX(dxTile);
+		movedTile.setY(dyTile);
 	}
 
 	private void animateTilesToEmptySpaceStartingWith(GameTile tile) {
