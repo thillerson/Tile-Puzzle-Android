@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
@@ -23,13 +24,13 @@ import android.widget.RelativeLayout;
 public class GameboardView extends RelativeLayout implements OnTouchListener {
 	
 	protected Size tileSize;
-	protected Rect gameboardRect;
+	protected RectF gameboardRect;
 	protected HashSet<GameTile> tiles;
 	protected GameTile emptyTile, movedTile;
 	private boolean boardCreated;
-	private boolean lastMoveWasDrag;
 	private PointF lastDragPoint;
 	private TileServer tileServer;
+	protected ArrayList<GameTileMotionDescriptor> currentMotionDescriptors;
 	
 	public GameboardView(Context context, AttributeSet attrSet) {
 		super(context, attrSet);
@@ -88,21 +89,17 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			} else {
 				if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
 					movedTile = touchedTile;
+					currentMotionDescriptors = getTilesBetweenEmptyTileAndTile(movedTile);
 				} else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
-					lastMoveWasDrag = true;
 					if (lastDragPoint != null) {
 						moveDraggedTilesByMotionEventDelta(event);
-						lastDragPoint = new PointF(event.getRawX(), event.getRawY());
-					} else {
-						lastDragPoint = new PointF(event.getRawX(), event.getRawY());
 					}
+					lastDragPoint = new PointF(event.getRawX(), event.getRawY());
 				} else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
-					if (lastMoveWasDrag) {
-						
-					} else {
-						animateTilesToEmptySpaceStartingWith(movedTile);
-					}
-					lastMoveWasDrag = false;
+					// reload the motion descriptors in case of position change.
+					currentMotionDescriptors = getTilesBetweenEmptyTileAndTile(movedTile);
+					animateCurrentMovedTilesToEmptySpace();
+					currentMotionDescriptors = null;
 					lastDragPoint = null;
 					movedTile = null;
 				}
@@ -114,21 +111,57 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	}
 
 	protected void moveDraggedTilesByMotionEventDelta(MotionEvent event) {
-		float dxEvent = lastDragPoint.x - event.getRawX();
-		float dyEvent = lastDragPoint.y - event.getRawY();
-		float dxTile = movedTile.getX() - dxEvent;
-		float dyTile = movedTile.getY() - dyEvent;
-		movedTile.setX(dxTile);
-		movedTile.setY(dyTile);
+		boolean impossibleMove;
+		float dxTile, dyTile;
+		float dxEvent = event.getRawX() - lastDragPoint.x;
+		float dyEvent = event.getRawY() - lastDragPoint.y;
+		GameTile tile;
+		for (GameTileMotionDescriptor gameTileMotionDescriptor : currentMotionDescriptors) {
+			tile = gameTileMotionDescriptor.tile;
+			dxTile = tile.getX() + dxEvent;
+			dyTile = tile.getY() + dyEvent;
+			
+			impossibleMove = (pointCollidesWithAnyNonMovedTile(new PointF(dxTile, dyTile)) || !(gameboardRect.contains(dxTile, dyTile)));
+			if (!impossibleMove) {
+				if (tile.coordinate.row == emptyTile.coordinate.row) {
+					tile.setX(dxTile);
+				} else if (tile.coordinate.column == emptyTile.coordinate.column) {
+					tile.setY(dyTile);
+				}
+			}
+		}
 	}
 
-	private void animateTilesToEmptySpaceStartingWith(GameTile tile) {
-		ArrayList<GameTileMotionDescriptor> motionDescriptors = getTilesBetweenEmptyTileAndTile(tile);
-		emptyTile.setX(tile.getX());
-		emptyTile.setY(tile.getY());
-		emptyTile.coordinate = tile.coordinate;
+	protected boolean pointCollidesWithAnyNonMovedTile(PointF point) {
+		RectF otherTileRect;
+		for (GameTile otherTile : tiles) {
+			if (!currentMovedTilesContainTile(otherTile) && !otherTile.isEmpty()) {
+				otherTileRect = new RectF(rectForCoordinate(otherTile.coordinate));
+				if (otherTileRect.contains(point.x, point.y)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	
+	
+	protected boolean currentMovedTilesContainTile(GameTile otherTile) {
+		for (GameTileMotionDescriptor motionDescriptor : currentMotionDescriptors) {
+			if (otherTile == motionDescriptor.tile) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	protected void animateCurrentMovedTilesToEmptySpace() {
+		emptyTile.setX(movedTile.getX());
+		emptyTile.setY(movedTile.getY());
+		emptyTile.coordinate = movedTile.coordinate;
 		ObjectAnimator animator;
-		for (final GameTileMotionDescriptor motionDescriptor : motionDescriptors) {
+		for (final GameTileMotionDescriptor motionDescriptor : currentMotionDescriptors) {
 			Ln.d("Starting animation: %s", motionDescriptor);
 			animator = ObjectAnimator.ofObject(
 						motionDescriptor.tile,
@@ -260,13 +293,15 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		int gameboardHeight = tileSize.height * 4;
 		int gameboardTop = viewHeight/2 - gameboardHeight/2;
 		int gameboardLeft = viewWidth/2 - gameboardWidth/2;
-		gameboardRect = new Rect(gameboardLeft, gameboardTop, gameboardLeft + gameboardWidth, gameboardTop + gameboardHeight);
+		gameboardRect = new RectF(gameboardLeft, gameboardTop, gameboardLeft + gameboardWidth, gameboardTop + gameboardHeight);
 		createTiles();
 	}
 
 	protected Rect rectForCoordinate(Coordinate coordinate) {
-		int top = (coordinate.row * tileSize.height) + gameboardRect.top;
-		int left = (coordinate.column * tileSize.width) + gameboardRect.left;
+		int gameboardY = (int) Math.floor(gameboardRect.top);
+		int gameboardX = (int) Math.floor(gameboardRect.left);
+		int top = (coordinate.row * tileSize.height) + gameboardY;
+		int left = (coordinate.column * tileSize.width) + gameboardX;
 		return new Rect(left, top, left + tileSize.width, top + tileSize.height);
 	}
 	
