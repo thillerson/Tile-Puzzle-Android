@@ -98,7 +98,16 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				} else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
 					// reload the motion descriptors in case of position change.
 					currentMotionDescriptors = getTilesBetweenEmptyTileAndTile(movedTile);
-					animateCurrentMovedTilesToEmptySpace();
+					// if last move was a dragging move and the move was over half way to the empty tile
+					if (lastDragPoint != null && lastDragMovedAtLeastHalfWay()) {
+						animateCurrentMovedTilesToEmptySpace();
+					// otherwise, if it wasn't a drag, do the move
+					} else if (lastDragPoint == null) {
+						animateCurrentMovedTilesToEmptySpace();
+					// Animate tiles back to origin
+					} else {
+						animateMovedTilesBackToOrigin();
+					}
 					currentMotionDescriptors = null;
 					lastDragPoint = null;
 					movedTile = null;
@@ -108,6 +117,16 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		} catch (ClassCastException e) {
 			return false;
 		}
+	}
+
+	protected boolean lastDragMovedAtLeastHalfWay() {
+		if (currentMotionDescriptors != null && currentMotionDescriptors.size() > 0) {
+			GameTileMotionDescriptor firstMotionDescriptor = currentMotionDescriptors.get(0);
+			if (firstMotionDescriptor.axialDelta > tileSize.width/2) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	protected void moveDraggedTilesByMotionEventDelta(MotionEvent event) {
@@ -144,8 +163,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		}
 		return false;
 	}
-	
-	
 	
 	protected boolean currentMovedTilesContainTile(GameTile otherTile) {
 		for (GameTileMotionDescriptor motionDescriptor : currentMotionDescriptors) {
@@ -186,28 +203,58 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			animator.start();
 		}
 	}
+	
+	protected void animateMovedTilesBackToOrigin() {
+		ObjectAnimator animator;
+		if (currentMotionDescriptors != null) {
+			for (final GameTileMotionDescriptor motionDescriptor : currentMotionDescriptors) {
+				Ln.d("Moving %s back", motionDescriptor.tile);
+				animator = ObjectAnimator.ofObject(
+						motionDescriptor.tile,
+						motionDescriptor.property,
+						new FloatEvaluator(),
+						motionDescriptor.currentPosition(),
+						motionDescriptor.originalPosition());
+				animator.setDuration(16);
+				animator.addListener(new AnimatorListener() {
+
+					public void onAnimationStart(Animator animation) { }
+					public void onAnimationCancel(Animator animation) { }
+					public void onAnimationRepeat(Animator animation) { }
+					public void onAnimationEnd(Animator animation) {
+						Ln.d("Animation complete: %s", motionDescriptor);
+					}
+				});
+				animator.start();
+			}
+		}
+	}
 
 	private ArrayList<GameTileMotionDescriptor> getTilesBetweenEmptyTileAndTile(GameTile tile) {
 		ArrayList<GameTileMotionDescriptor> descriptors = new ArrayList<GameTileMotionDescriptor>();
 		Coordinate coordinate, finalCoordinate;
 		GameTile foundTile;
 		GameTileMotionDescriptor motionDescriptor;
-		Rect rect;
+		Rect finalRect, currentRect;
+		float axialDelta;
 		if (tile.isToRightOf(emptyTile)) {
 			Ln.d("To right of empty tile");
 			for (int i = tile.coordinate.column; i > emptyTile.coordinate.column; i--) {
 				coordinate = new Coordinate(tile.coordinate.row, i);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
 				finalCoordinate = new Coordinate(tile.coordinate.row, i-1);
-				rect = rectForCoordinate(finalCoordinate);
+				currentRect = rectForCoordinate(foundTile.coordinate);
+				finalRect = rectForCoordinate(finalCoordinate);
+				axialDelta = Math.abs(foundTile.getX() - currentRect.left);
 				motionDescriptor = new GameTileMotionDescriptor(
 							foundTile,
 							"x",
 							foundTile.getX(),
-							rect.left
+							finalRect.left
 						);
 				motionDescriptor.finalCoordinate = finalCoordinate;
-				motionDescriptor.finalRect = rect;
+				motionDescriptor.finalRect = finalRect;
+				motionDescriptor.axialDelta = axialDelta;
 				descriptors.add(motionDescriptor);
 			}
 		} else if (tile.isToLeftOf(emptyTile)) {
@@ -216,15 +263,18 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				coordinate = new Coordinate(tile.coordinate.row, i);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
 				finalCoordinate = new Coordinate(tile.coordinate.row, i+1);
-				rect = rectForCoordinate(finalCoordinate);
+				currentRect = rectForCoordinate(foundTile.coordinate);
+				finalRect = rectForCoordinate(finalCoordinate);
+				axialDelta = Math.abs(foundTile.getX() - currentRect.left);
 				motionDescriptor = new GameTileMotionDescriptor(
 							foundTile,
 							"x",
 							foundTile.getX(),
-							rect.left
+							finalRect.left
 						);
 				motionDescriptor.finalCoordinate = finalCoordinate;
-				motionDescriptor.finalRect = rect;
+				motionDescriptor.finalRect = finalRect;
+				motionDescriptor.axialDelta = axialDelta;
 				descriptors.add(motionDescriptor);
 			}
 		} else if (tile.isAbove(emptyTile)) {
@@ -233,15 +283,18 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				coordinate = new Coordinate(i, tile.coordinate.column);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
 				finalCoordinate = new Coordinate(i+1, tile.coordinate.column); 
-				rect = rectForCoordinate(finalCoordinate);
+				currentRect = rectForCoordinate(foundTile.coordinate);
+				finalRect = rectForCoordinate(finalCoordinate);
+				axialDelta = Math.abs(foundTile.getY() - currentRect.top);
 				motionDescriptor = new GameTileMotionDescriptor(
 							foundTile,
 							"y",
 							foundTile.getY(),
-							rect.top
+							finalRect.top
 						);
 				motionDescriptor.finalCoordinate = finalCoordinate;
-				motionDescriptor.finalRect = rect;
+				motionDescriptor.finalRect = finalRect;
+				motionDescriptor.axialDelta = axialDelta;
 				descriptors.add(motionDescriptor);
 			}
 		} else if (tile.isBelow(emptyTile)) {
@@ -250,15 +303,18 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				coordinate = new Coordinate(i, tile.coordinate.column);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
 				finalCoordinate = new Coordinate(i-1, tile.coordinate.column);
-				rect = rectForCoordinate(finalCoordinate);
+				currentRect = rectForCoordinate(foundTile.coordinate);
+				finalRect = rectForCoordinate(finalCoordinate);
+				axialDelta = Math.abs(foundTile.getY() - currentRect.top);
 				motionDescriptor = new GameTileMotionDescriptor(
 							foundTile,
 							"y",
 							foundTile.getY(),
-							rect.top
+							finalRect.top
 						);
 				motionDescriptor.finalCoordinate = finalCoordinate;
-				motionDescriptor.finalRect = rect;
+				motionDescriptor.finalRect = finalRect;
+				motionDescriptor.axialDelta = axialDelta;
 				descriptors.add(motionDescriptor);
 			}
 		}
@@ -363,7 +419,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		public Rect finalRect;
 		public String property;
 		public GameTile tile;
-		public float from, to;
+		public float from, to, axialDelta;
 		public Coordinate finalCoordinate;
 		
 		public GameTileMotionDescriptor(GameTile tile, String property, float from, float to) {
@@ -372,6 +428,25 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			this.from = from;
 			this.to = to;
 			this.property = property;
+		}
+
+		public float currentPosition() {
+			if (property.equals("x")) {
+				return tile.getX();
+			} else if (property.equals("y")) {
+				return tile.getY();
+			}
+			return 0;
+		}
+
+		public float originalPosition() {
+			Rect originalRect = rectForCoordinate(tile.coordinate);
+			if (property.equals("x")) {
+				return originalRect.left;
+			} else if (property.equals("y")) {
+				return originalRect.top;
+			}
+			return 0;
 		}
 
 		@Override
