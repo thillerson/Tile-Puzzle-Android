@@ -82,7 +82,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	public boolean onTouch(View v, MotionEvent event) {
 		try {
 			GameTile touchedTile = (GameTile)v;
-			Ln.d("%s\n\tTile touched: %s", touchedTile, event);
+			//Ln.d("%s\n\tTile touched: %s", touchedTile, event);
 			if (touchedTile.isEmpty() || !touchedTile.isInRowOrColumnOf(emptyTile)) {
 				Ln.d("Empty or immovable tile; ignoring");
 				return false;
@@ -140,7 +140,10 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			dxTile = tile.getX() + dxEvent;
 			dyTile = tile.getY() + dyEvent;
 			
-			impossibleMove = (pointCollidesWithAnyNonMovedTile(new PointF(dxTile, dyTile)) || !(gameboardRect.contains(dxTile, dyTile)));
+			RectF candidateRect = new RectF(dxTile, dyTile, dxTile + tile.getWidth(), dyTile + tile.getHeight());
+			boolean candidateRectInGameboard = (gameboardRect.contains(candidateRect));
+			//Ln.d("In gameboard? %b", candidateRectInGameboard);
+			impossibleMove = (candidateRectForTileCollidesWithAnyOtherTile(tile, candidateRect) || !candidateRectInGameboard);
 			if (!impossibleMove) {
 				if (tile.coordinate.row == emptyTile.coordinate.row) {
 					tile.setX(dxTile);
@@ -151,12 +154,14 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		}
 	}
 
-	protected boolean pointCollidesWithAnyNonMovedTile(PointF point) {
+	protected boolean candidateRectForTileCollidesWithAnyOtherTile(GameTile tile, RectF candidateRect) {
 		RectF otherTileRect;
 		for (GameTile otherTile : tiles) {
-			if (!currentMovedTilesContainTile(otherTile) && !otherTile.isEmpty()) {
-				otherTileRect = new RectF(rectForCoordinate(otherTile.coordinate));
-				if (otherTileRect.contains(point.x, point.y)) {
+			if (!otherTile.isEmpty() && otherTile != tile) {
+				otherTileRect = new RectF(otherTile.getX(), otherTile.getY(), otherTile.getX() + otherTile.getWidth(), otherTile.getY() + otherTile.getHeight());
+				//Ln.d("Checking rect for %s, %s against %s", otherTile, otherTileRect, candidateRect);
+				if (RectF.intersects(otherTileRect, candidateRect)) {
+					//Ln.d("Collision with %s", otherTile);
 					return true;
 				}
 			}
