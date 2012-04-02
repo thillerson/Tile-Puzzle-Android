@@ -161,7 +161,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				otherTileRect = new RectF(otherTile.getX(), otherTile.getY(), otherTile.getX() + otherTile.getWidth(), otherTile.getY() + otherTile.getHeight());
 				//Ln.d("Checking rect for %s, %s against %s", otherTile, otherTileRect, candidateRect);
 				if (RectF.intersects(otherTileRect, candidateRect)) {
-					//Ln.d("Collision with %s", otherTile);
+					Ln.d("Collision with %s", otherTile);
 					return true;
 				}
 			}
@@ -169,15 +169,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return false;
 	}
 	
-	protected boolean currentMovedTilesContainTile(GameTile otherTile) {
-		for (GameTileMotionDescriptor motionDescriptor : currentMotionDescriptors) {
-			if (otherTile == motionDescriptor.tile) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	protected void animateCurrentMovedTilesToEmptySpace() {
 		emptyTile.setX(movedTile.getX());
 		emptyTile.setY(movedTile.getY());
@@ -327,10 +318,10 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	}
 	
 	protected GameTile getTileAtCoordinate(Coordinate coordinate) {
-		Ln.d("Finding tile at %s", coordinate);
+		//Ln.d("Finding tile at %s", coordinate);
 		for (GameTile tile : tiles) {
 			if (tile.coordinate.matches(coordinate)) {
-				Ln.d("Found tile %s", tile);
+				//Ln.d("Found tile %s", tile);
 				return tile;
 			}
 		}
