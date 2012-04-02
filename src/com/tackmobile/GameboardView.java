@@ -130,7 +130,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	}
 
 	protected void moveDraggedTilesByMotionEventDelta(MotionEvent event) {
-		boolean impossibleMove;
+		boolean impossibleMove = true;
 		float dxTile, dyTile;
 		float dxEvent = event.getRawX() - lastDragPoint.x;
 		float dyEvent = event.getRawY() - lastDragPoint.y;
@@ -142,13 +142,19 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			
 			RectF candidateRect = new RectF(dxTile, dyTile, dxTile + tile.getWidth(), dyTile + tile.getHeight());
 			boolean candidateRectInGameboard = (gameboardRect.contains(candidateRect));
-			//Ln.d("In gameboard? %b", candidateRectInGameboard);
-			impossibleMove = (candidateRectForTileCollidesWithAnyOtherTile(tile, candidateRect) || !candidateRectInGameboard);
-			if (!impossibleMove) {
-				if (tile.coordinate.row == emptyTile.coordinate.row) {
-					tile.setX(dxTile);
-				} else if (tile.coordinate.column == emptyTile.coordinate.column) {
-					tile.setY(dyTile);
+			impossibleMove = impossibleMove && (!candidateRectInGameboard || candidateRectForTileCollidesWithAnyOtherTile(tile, candidateRect));
+		}
+		if (!impossibleMove) {
+			for (GameTileMotionDescriptor gameTileMotionDescriptor : currentMotionDescriptors) {
+				tile = gameTileMotionDescriptor.tile;
+				dxTile = tile.getX() + dxEvent;
+				dyTile = tile.getY() + dyEvent;
+				if (!impossibleMove) {
+					if (tile.coordinate.row == emptyTile.coordinate.row) {
+						tile.setX(dxTile);
+					} else if (tile.coordinate.column == emptyTile.coordinate.column) {
+						tile.setY(dyTile);
+					}
 				}
 			}
 		}
