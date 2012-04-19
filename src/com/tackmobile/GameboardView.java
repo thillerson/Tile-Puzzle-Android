@@ -3,7 +3,6 @@ package com.tackmobile;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-import roboguice.util.Ln;
 import android.animation.Animator;
 import android.animation.Animator.AnimatorListener;
 import android.animation.FloatEvaluator;
@@ -84,7 +83,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			GameTile touchedTile = (GameTile)v;
 			//Ln.d("%s\n\tTile touched: %s", touchedTile, event);
 			if (touchedTile.isEmpty() || !touchedTile.isInRowOrColumnOf(emptyTile)) {
-				Ln.d("Empty or immovable tile; ignoring");
 				return false;
 			} else {
 				if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
@@ -167,7 +165,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				otherTileRect = new RectF(otherTile.getX(), otherTile.getY(), otherTile.getX() + otherTile.getWidth(), otherTile.getY() + otherTile.getHeight());
 				//Ln.d("Checking rect for %s, %s against %s", otherTile, otherTileRect, candidateRect);
 				if (RectF.intersects(otherTileRect, candidateRect)) {
-					Ln.d("Collision with %s", otherTile);
 					return true;
 				}
 			}
@@ -181,7 +178,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		emptyTile.coordinate = movedTile.coordinate;
 		ObjectAnimator animator;
 		for (final GameTileMotionDescriptor motionDescriptor : currentMotionDescriptors) {
-			Ln.d("Starting animation: %s", motionDescriptor);
 			animator = ObjectAnimator.ofObject(
 						motionDescriptor.tile,
 						motionDescriptor.property,
@@ -199,7 +195,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 					motionDescriptor.tile.coordinate = motionDescriptor.finalCoordinate;
 					motionDescriptor.tile.setX(motionDescriptor.finalRect.left);
 					motionDescriptor.tile.setY(motionDescriptor.finalRect.top);
-					Ln.d("Animation complete: %s", motionDescriptor);
 				}
 			});
 			animator.start();
@@ -210,7 +205,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		ObjectAnimator animator;
 		if (currentMotionDescriptors != null) {
 			for (final GameTileMotionDescriptor motionDescriptor : currentMotionDescriptors) {
-				Ln.d("Moving %s back", motionDescriptor.tile);
 				animator = ObjectAnimator.ofObject(
 						motionDescriptor.tile,
 						motionDescriptor.property,
@@ -224,7 +218,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 					public void onAnimationCancel(Animator animation) { }
 					public void onAnimationRepeat(Animator animation) { }
 					public void onAnimationEnd(Animator animation) {
-						Ln.d("Animation complete: %s", motionDescriptor);
 					}
 				});
 				animator.start();
@@ -240,7 +233,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		Rect finalRect, currentRect;
 		float axialDelta;
 		if (tile.isToRightOf(emptyTile)) {
-			Ln.d("To right of empty tile");
 			for (int i = tile.coordinate.column; i > emptyTile.coordinate.column; i--) {
 				coordinate = new Coordinate(tile.coordinate.row, i);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
@@ -260,7 +252,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				descriptors.add(motionDescriptor);
 			}
 		} else if (tile.isToLeftOf(emptyTile)) {
-			Ln.d("To left of empty tile");
 			for (int i = tile.coordinate.column; i < emptyTile.coordinate.column; i++) {
 				coordinate = new Coordinate(tile.coordinate.row, i);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
@@ -280,7 +271,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				descriptors.add(motionDescriptor);
 			}
 		} else if (tile.isAbove(emptyTile)) {
-			Ln.d("Above empty tile");
 			for (int i = tile.coordinate.row; i < emptyTile.coordinate.row; i++) {
 				coordinate = new Coordinate(i, tile.coordinate.column);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
@@ -300,7 +290,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				descriptors.add(motionDescriptor);
 			}
 		} else if (tile.isBelow(emptyTile)) {
-			Ln.d("Below empty tile");
 			for (int i = tile.coordinate.row; i > emptyTile.coordinate.row; i--) {
 				coordinate = new Coordinate(i, tile.coordinate.column);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate) ;
@@ -344,7 +333,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	protected void determineGameboardSizes() {
 		int viewWidth = getWidth();
 		int viewHeight = getHeight();
-		Ln.d("width %d, height %d", viewWidth, viewHeight);
 		// ostensibly tiles can be sized based on view geometry. Hardcode for now.
 		tileSize = new Size(68, 68);
 		int gameboardWidth = tileSize.width * 4;

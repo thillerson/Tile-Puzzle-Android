@@ -1,12 +1,9 @@
 package com.tackmobile;
 
-import roboguice.activity.RoboActivity;
-import roboguice.inject.InjectView;
+import android.app.Activity;
 import android.os.Bundle;
 
-public class SliderPuzzleActivity extends RoboActivity {
-	
-	@InjectView(R.id.gameboard) GameboardView gameboard;
+public class SliderPuzzleActivity extends Activity {
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
