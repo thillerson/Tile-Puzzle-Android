@@ -81,7 +81,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	public boolean onTouch(View v, MotionEvent event) {
 		try {
 			GameTile touchedTile = (GameTile)v;
-			//Ln.d("%s\n\tTile touched: %s", touchedTile, event);
 			if (touchedTile.isEmpty() || !touchedTile.isInRowOrColumnOf(emptyTile)) {
 				return false;
 			} else {
@@ -139,8 +138,17 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			dyTile = tile.getY() + dyEvent;
 			
 			RectF candidateRect = new RectF(dxTile, dyTile, dxTile + tile.getWidth(), dyTile + tile.getHeight());
+			HashSet<GameTile> tilesToCheck = null;
+			if (tile.coordinate.row == emptyTile.coordinate.row) {
+				tilesToCheck = allTilesInRow(tile.coordinate.row);
+			} else if (tile.coordinate.column == emptyTile.coordinate.column) {
+				tilesToCheck = allTilesInColumn(tile.coordinate.column);
+			}
+			
 			boolean candidateRectInGameboard = (gameboardRect.contains(candidateRect));
-			impossibleMove = impossibleMove && (!candidateRectInGameboard || candidateRectForTileCollidesWithAnyOtherTile(tile, candidateRect));
+			boolean collides = candidateRectForTileCollidesWithAnyTileInSet(candidateRect, tile, tilesToCheck);
+			
+			impossibleMove = impossibleMove && (!candidateRectInGameboard || collides);
 		}
 		if (!impossibleMove) {
 			for (GameTileMotionDescriptor gameTileMotionDescriptor : currentMotionDescriptors) {
@@ -158,12 +166,11 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		}
 	}
 
-	protected boolean candidateRectForTileCollidesWithAnyOtherTile(GameTile tile, RectF candidateRect) {
+	protected boolean candidateRectForTileCollidesWithAnyTileInSet(RectF candidateRect, GameTile tile, HashSet<GameTile> set) {
 		RectF otherTileRect;
-		for (GameTile otherTile : tiles) {
+		for (GameTile otherTile : set) {
 			if (!otherTile.isEmpty() && otherTile != tile) {
 				otherTileRect = new RectF(otherTile.getX(), otherTile.getY(), otherTile.getX() + otherTile.getWidth(), otherTile.getY() + otherTile.getHeight());
-				//Ln.d("Checking rect for %s, %s against %s", otherTile, otherTileRect, candidateRect);
 				if (RectF.intersects(otherTileRect, candidateRect)) {
 					return true;
 				}
@@ -321,6 +328,26 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			}
 		}
 		return null;
+	}
+	
+	protected HashSet<GameTile> allTilesInRow(int row) {
+		HashSet<GameTile> tilesInRow = new HashSet<GameTile>();
+		for (GameTile tile : tiles) {
+			if (tile.coordinate.row == row) {
+				tilesInRow.add(tile);
+			}
+		}
+		return tilesInRow;
+	}
+
+	protected HashSet<GameTile> allTilesInColumn(int column) {
+		HashSet<GameTile> tilesInColumn = new HashSet<GameTile>();
+		for (GameTile tile : tiles) {
+			if (tile.coordinate.column == column) {
+				tilesInColumn.add(tile);
+			}
+		}
+		return tilesInColumn;
 	}
 
 	protected GameTile createTileAtCoordinate(Coordinate coordinate) {
