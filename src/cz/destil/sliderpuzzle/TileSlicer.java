@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 
 /**
  * 
@@ -18,9 +21,10 @@ import android.graphics.Bitmap;
  */
 public class TileSlicer {
 
+	@SuppressWarnings("unused")
 	private static final String TAG = "TileSlicer";
 	private Bitmap original;
-	private int tileSize;
+	private int tileSize, gridSize;
 	private ArrayList<Bitmap> slices;
 	private Random random;
 
@@ -35,6 +39,7 @@ public class TileSlicer {
 	public TileSlicer(Bitmap original, int gridSize) {
 		super();
 		this.original = original;
+		this.gridSize = gridSize;
 		this.tileSize = original.getWidth() / gridSize;
 		random = new Random();
 		slices = new ArrayList<Bitmap>();
@@ -47,15 +52,26 @@ public class TileSlicer {
 	private void sliceOriginal() {
 		int x, y;
 		Bitmap bitmap;
-		for (int rowI = 0; rowI < 4; rowI++) {
-			for (int colI = 0; colI < 4; colI++) {
+		for (int rowI = 0; rowI < gridSize; rowI++) {
+			for (int colI = 0; colI < gridSize; colI++) {
 				x = rowI * tileSize;
 				y = colI * tileSize;
+				// slice
 				bitmap = Bitmap.createBitmap(original, x, y, tileSize, tileSize);
+				// draw border lines
+				Canvas canvas = new Canvas(bitmap);
+				Paint paint = new Paint();
+				paint.setColor(Color.parseColor("#fbfdff"));
+				int end = tileSize - 1;
+				canvas.drawLine(0, 0, 0, end, paint);
+				canvas.drawLine(0, end, end, end, paint);
+				canvas.drawLine(end, end, end, 0, paint);
+				canvas.drawLine(end, 0, 0, 0, paint);
 				slices.add(bitmap);
 			}
 		}
 		// remove original bitmap from memory
+		original.recycle();
 		original = null;
 	}
 
