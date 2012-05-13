@@ -360,8 +360,8 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	protected void determineGameboardSizes() {
 		int viewWidth = getWidth();
 		int viewHeight = getHeight();
-		// ostensibly tiles can be sized based on view geometry. Hardcode for now.
-		tileSize = new Size(68, 68);
+		int tileDimen = Math.round(getResources().getDimension(R.dimen.tile_size));
+		tileSize = new Size(tileDimen, tileDimen);
 		int gameboardWidth = tileSize.width * 4;
 		int gameboardHeight = tileSize.height * 4;
 		int gameboardTop = viewHeight/2 - gameboardHeight/2;
