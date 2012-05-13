@@ -1,4 +1,4 @@
-package cz.destil.sliderpuzzle;
+package cz.destil.sliderpuzzle.util;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -71,7 +71,6 @@ public class TileSlicer {
 			}
 		}
 		// remove original bitmap from memory
-		original.recycle();
 		original = null;
 	}
 

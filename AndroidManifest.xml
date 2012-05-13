@@ -11,8 +11,8 @@
         android:label="@string/app_name"
         android:theme="@android:style/Theme.NoTitleBar">
         <activity
-            android:name="cz.destil.sliderpuzzle.SliderPuzzleActivity"
-            android:label="@string/app_name" >
+            android:name=".ui.SliderPuzzleActivity"
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

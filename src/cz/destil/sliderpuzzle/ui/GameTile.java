@@ -1,23 +1,28 @@
-package cz.destil.sliderpuzzle;
+package cz.destil.sliderpuzzle.ui;
 
-import cz.destil.sliderpuzzle.GameboardView.Coordinate;
-
+import cz.destil.sliderpuzzle.data.Coordinate;
 import android.content.Context;
 import android.widget.ImageView;
 
+/**
+ * 
+ * ImageView displaying tile of the puzzle. Contains useful functions for
+ * comparing with other tiles.
+ * 
+ * Based on:
+ * https://github.com/thillerson/Android-Slider-Puzzle/blob/master/src/
+ * com/tackmobile/GameTile.java
+ * 
+ * @author David Vavra
+ */
 public class GameTile extends ImageView {
-	
+
 	public Coordinate coordinate;
-	protected boolean empty; 
+	private boolean empty;
 
 	public GameTile(Context context, Coordinate coordinate) {
 		super(context);
 		this.coordinate = coordinate;
-	}
-	
-	@Override
-	public String toString() {
-		return String.format("<GameTile at row: %d, col: %d, x: %f, y: %f", coordinate.row, coordinate.column, getX(), getY());
 	}
 
 	public boolean isEmpty() {

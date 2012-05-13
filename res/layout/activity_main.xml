@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<cz.destil.sliderpuzzle.GameboardView xmlns:android="http://schemas.android.com/apk/res/android"
+<cz.destil.sliderpuzzle.ui.GameboardView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/gameboard"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background" >
 
-</cz.destil.sliderpuzzle.GameboardView>
+</cz.destil.sliderpuzzle.ui.GameboardView>

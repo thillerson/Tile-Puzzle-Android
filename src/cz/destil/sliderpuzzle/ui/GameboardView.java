@@ -1,4 +1,4 @@
-package cz.destil.sliderpuzzle;
+package cz.destil.sliderpuzzle.ui;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,26 +19,35 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import android.widget.RelativeLayout;
+import cz.destil.sliderpuzzle.R;
+import cz.destil.sliderpuzzle.data.Coordinate;
+import cz.destil.sliderpuzzle.util.TileSlicer;
 
+/**
+ * 
+ * Layout handling creation and interaction of the game tiles. Captures gestures
+ * and performs animations.
+ * 
+ * Based on:
+ * https://github.com/thillerson/Android-Slider-Puzzle/blob/master/src/
+ * com/tackmobile/GameboardView.java
+ * 
+ * @author David Vavra
+ * 
+ */
 public class GameboardView extends RelativeLayout implements OnTouchListener {
 
 	public static final int GRID_SIZE = 4; // 4x4
-	protected Size tileSize;
-	protected RectF gameboardRect;
-	protected HashSet<GameTile> tiles;
-	protected GameTile emptyTile, movedTile;
+	private RectF gameboardRect;
+	private ArrayList<GameTile> tiles;
+	private GameTile emptyTile, movedTile;
 	private boolean boardCreated;
 	private PointF lastDragPoint;
-	private TileSlicer tileSlicer;
-	protected ArrayList<GameTileMotionDescriptor> currentMotionDescriptors;
+	private int tileSize;
+	private ArrayList<GameTileMotionDescriptor> currentMotionDescriptors;
 
 	public GameboardView(Context context, AttributeSet attrSet) {
 		super(context, attrSet);
-		Drawable globe = getResources().getDrawable(R.drawable.globe);
-		Bitmap original = ((BitmapDrawable) globe).getBitmap();
-		tileSlicer = new TileSlicer(original, GRID_SIZE);
-
-		createTiles();
 	}
 
 	@Override
@@ -46,37 +55,72 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		super.onLayout(changed, left, top, right, bottom);
 		if (!boardCreated) {
 			determineGameboardSizes();
-			placeTiles();
+			// load image to slicer
+			Drawable globe = getResources().getDrawable(R.drawable.globe);
+			Bitmap original = ((BitmapDrawable) globe).getBitmap();
+			TileSlicer tileSlicer = new TileSlicer(original, GRID_SIZE);
+			
+			fillTiles(tileSlicer);
 			boardCreated = true;
 		}
 	}
-
-	protected void placeTiles() {
-		for (GameTile tile : tiles) {
-			placeTile(tile);
+	
+	/**
+	 * Detect gameboard size and tile size based on current screen.
+	 */
+	private void determineGameboardSizes() {
+		int viewWidth = getWidth();
+		int viewHeight = getHeight();
+		// fit in portrait or landscape
+		if (viewWidth > viewHeight) {
+			tileSize = viewHeight / GRID_SIZE;
+		} else {
+			tileSize = viewWidth / GRID_SIZE;
 		}
+		// leave a bit on the sides
+		tileSize -= 5;
+		int gameboardSize = tileSize * GRID_SIZE;
+		// center gameboard
+		int gameboardTop = viewHeight / 2 - gameboardSize / 2;
+		int gameboardLeft = viewWidth / 2 - gameboardSize / 2;
+		gameboardRect = new RectF(gameboardLeft, gameboardTop, gameboardLeft + gameboardSize, gameboardTop
+				+ gameboardSize);
 	}
 
-	protected void placeTile(GameTile tile) {
-		Rect tileRect = rectForCoordinate(tile.coordinate);
-		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(tileSize.width, tileSize.height);
-		params.topMargin = tileRect.top;
-		params.leftMargin = tileRect.left;
-		addView(tile, params);
-		tile.setImageBitmap(tileSlicer.getRandomSlice());
-	}
-
-	protected void createTiles() {
-		tiles = new HashSet<GameTile>();
+	/**
+	 * Fills gameboard with tiles
+	 * @param tileSlicer TileSlicer with loaded image
+	 */
+	private void fillTiles(TileSlicer tileSlicer) {
+		tiles = new ArrayList<GameTile>();
 		for (int rowI = 0; rowI < GRID_SIZE; rowI++) {
 			for (int colI = 0; colI < GRID_SIZE; colI++) {
-				GameTile tile = createTileAtCoordinate(new Coordinate(rowI, colI));
+				GameTile tile = new GameTile(getContext(), new Coordinate(rowI, colI));
+				tile.setOnTouchListener(this);
 				if (rowI == GRID_SIZE - 1 && colI == GRID_SIZE - 1) {
+					// empty tile
 					emptyTile = tile;
 					tile.setEmpty(true);
+				} else {
+					// tile with image - set random tile from slicer
+					tile.setImageBitmap(tileSlicer.getRandomSlice());				
 				}
+				placeTile(tile);
+				tiles.add(tile);
 			}
 		}
+	}
+	
+	/**
+	 * Places tile on appropriate place in the layout
+	 * @param tile Tile to place
+	 */
+	private void placeTile(GameTile tile) {
+		Rect tileRect = rectForCoordinate(tile.coordinate);
+		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(tileSize, tileSize);
+		params.topMargin = tileRect.top;
+		params.leftMargin = tileRect.left;
+		addView(tile, params);	
 	}
 
 	public boolean onTouch(View v, MotionEvent event) {
@@ -121,14 +165,14 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	protected boolean lastDragMovedAtLeastHalfWay() {
 		if (currentMotionDescriptors != null && currentMotionDescriptors.size() > 0) {
 			GameTileMotionDescriptor firstMotionDescriptor = currentMotionDescriptors.get(0);
-			if (firstMotionDescriptor.axialDelta > tileSize.width / 2) {
+			if (firstMotionDescriptor.axialDelta > tileSize / 2) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	protected void moveDraggedTilesByMotionEventDelta(MotionEvent event) {
+	private void moveDraggedTilesByMotionEventDelta(MotionEvent event) {
 		boolean impossibleMove = true;
 		float dxTile, dyTile;
 		float dxEvent = event.getRawX() - lastDragPoint.x;
@@ -168,7 +212,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		}
 	}
 
-	protected boolean candidateRectForTileCollidesWithAnyTileInSet(RectF candidateRect, GameTile tile,
+	private boolean candidateRectForTileCollidesWithAnyTileInSet(RectF candidateRect, GameTile tile,
 			HashSet<GameTile> set) {
 		RectF otherTileRect;
 		for (GameTile otherTile : set) {
@@ -183,7 +227,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return false;
 	}
 
-	protected void animateCurrentMovedTilesToEmptySpace() {
+	private void animateCurrentMovedTilesToEmptySpace() {
 		emptyTile.setX(movedTile.getX());
 		emptyTile.setY(movedTile.getY());
 		emptyTile.coordinate = movedTile.coordinate;
@@ -213,7 +257,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		}
 	}
 
-	protected void animateMovedTilesBackToOrigin() {
+	private void animateMovedTilesBackToOrigin() {
 		ObjectAnimator animator;
 		if (currentMotionDescriptors != null) {
 			for (final GameTileMotionDescriptor motionDescriptor : currentMotionDescriptors) {
@@ -306,7 +350,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return descriptors;
 	}
 
-	protected GameTile getTileAtCoordinate(Coordinate coordinate) {
+	private GameTile getTileAtCoordinate(Coordinate coordinate) {
 		for (GameTile tile : tiles) {
 			if (tile.coordinate.matches(coordinate)) {
 				return tile;
@@ -315,7 +359,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return null;
 	}
 
-	protected HashSet<GameTile> allTilesInRow(int row) {
+	private HashSet<GameTile> allTilesInRow(int row) {
 		HashSet<GameTile> tilesInRow = new HashSet<GameTile>();
 		for (GameTile tile : tiles) {
 			if (tile.coordinate.row == row) {
@@ -325,7 +369,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return tilesInRow;
 	}
 
-	protected HashSet<GameTile> allTilesInColumn(int column) {
+	private HashSet<GameTile> allTilesInColumn(int column) {
 		HashSet<GameTile> tilesInColumn = new HashSet<GameTile>();
 		for (GameTile tile : tiles) {
 			if (tile.coordinate.column == column) {
@@ -335,91 +379,12 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return tilesInColumn;
 	}
 
-	protected GameTile createTileAtCoordinate(Coordinate coordinate) {
-		GameTile tile = new GameTile(getContext(), coordinate);
-		tiles.add(tile);
-		tile.setOnTouchListener(this);
-		return tile;
-	}
-
-	protected void determineGameboardSizes() {
-		int viewWidth = getWidth();
-		int viewHeight = getHeight();
-		int tileWidth = 0;
-		if (viewWidth > viewHeight) {
-			tileWidth = viewHeight / GRID_SIZE;
-		} else {
-			tileWidth = viewWidth / GRID_SIZE;
-		}
-		tileSize = new Size(tileWidth, tileWidth);
-		int gameboardWidth = tileSize.width * GRID_SIZE;
-		int gameboardHeight = tileSize.height * GRID_SIZE;
-		int gameboardTop = viewHeight / 2 - gameboardHeight / 2;
-		int gameboardLeft = viewWidth / 2 - gameboardWidth / 2;
-		gameboardRect = new RectF(gameboardLeft, gameboardTop, gameboardLeft + gameboardWidth, gameboardTop
-				+ gameboardHeight);
-		createTiles();
-	}
-
-	protected Rect rectForCoordinate(Coordinate coordinate) {
+	private Rect rectForCoordinate(Coordinate coordinate) {
 		int gameboardY = (int) Math.floor(gameboardRect.top);
 		int gameboardX = (int) Math.floor(gameboardRect.left);
-		int top = (coordinate.row * tileSize.height) + gameboardY;
-		int left = (coordinate.column * tileSize.width) + gameboardX;
-		return new Rect(left, top, left + tileSize.width, top + tileSize.height);
-	}
-
-	public class Size {
-
-		public int width;
-		public int height;
-
-		public Size(int width, int height) {
-			this.width = width;
-			this.height = height;
-		}
-
-	}
-
-	public class Coordinate {
-
-		public int row;
-		public int column;
-
-		public Coordinate(int row, int column) {
-			this.row = row;
-			this.column = column;
-		}
-
-		public boolean matches(Coordinate coordinate) {
-			return coordinate.row == row && coordinate.column == column;
-		}
-
-		public boolean sharesAxisWith(Coordinate coordinate) {
-			return (row == coordinate.row || column == coordinate.column);
-		}
-
-		public boolean isToRightOf(Coordinate coordinate) {
-			return sharesAxisWith(coordinate) && (column > coordinate.column);
-		}
-
-		public boolean isToLeftOf(Coordinate coordinate) {
-			return sharesAxisWith(coordinate) && (column < coordinate.column);
-		}
-
-		public boolean isAbove(Coordinate coordinate) {
-			return sharesAxisWith(coordinate) && (row < coordinate.row);
-		}
-
-		public boolean isBelow(Coordinate coordinate) {
-			return sharesAxisWith(coordinate) && (row > coordinate.row);
-		}
-
-		@Override
-		public String toString() {
-			return "Coordinate [row=" + row + ", column=" + column + "]";
-		}
-
+		int top = (coordinate.row * tileSize) + gameboardY;
+		int left = (coordinate.column * tileSize) + gameboardX;
+		return new Rect(left, top, left + tileSize, top + tileSize);
 	}
 
 	public class GameTileMotionDescriptor {
@@ -455,12 +420,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				return originalRect.top;
 			}
 			return 0;
-		}
-
-		@Override
-		public String toString() {
-			return "GameTileMotionDescriptor [property=" + property + ", tile=" + tile + ", from=" + from + ", to="
-					+ to + "]";
 		}
 
 	}
