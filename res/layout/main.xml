@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<merge xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent">
-	<cz.destil.sliderpuzzle.GameboardView android:id="@+id/gameboard"
-	    android:layout_width="match_parent"
-	    android:layout_height="match_parent">
-	</cz.destil.sliderpuzzle.GameboardView>
-</merge>
+<cz.destil.sliderpuzzle.GameboardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/gameboard"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background" >
+
+</cz.destil.sliderpuzzle.GameboardView>

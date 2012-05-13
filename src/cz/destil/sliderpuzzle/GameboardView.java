@@ -22,20 +22,21 @@ import android.widget.RelativeLayout;
 
 public class GameboardView extends RelativeLayout implements OnTouchListener {
 	
+	public static final int GRID_SIZE = 4; //4x4
 	protected Size tileSize;
 	protected RectF gameboardRect;
 	protected HashSet<GameTile> tiles;
 	protected GameTile emptyTile, movedTile;
 	private boolean boardCreated;
 	private PointF lastDragPoint;
-	private TileServer tileServer;
+	private TileSlicer tileSlicer;
 	protected ArrayList<GameTileMotionDescriptor> currentMotionDescriptors;
 	
 	public GameboardView(Context context, AttributeSet attrSet) {
 		super(context, attrSet);
 		Drawable globe = getResources().getDrawable(R.drawable.globe);
 		Bitmap original = ((BitmapDrawable)globe).getBitmap();
-		tileServer = new TileServer(original, 4, 4, 68);
+		tileSlicer = new TileSlicer(original, GRID_SIZE);
 		
 		createTiles();
 	}
@@ -62,13 +63,13 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		params.topMargin = tileRect.top;
 		params.leftMargin = tileRect.left;
 		addView(tile, params);
-		tile.setImageBitmap(tileServer.serveRandomSlice());
+		tile.setImageBitmap(tileSlicer.getRandomSlice());
 	}
 
 	protected void createTiles() {
 		tiles = new HashSet<GameTile>();
-		for (int rowI=0; rowI<4; rowI++) {
-			for (int colI=0; colI<4; colI++) {
+		for (int rowI=0; rowI<GRID_SIZE; rowI++) {
+			for (int colI=0; colI<GRID_SIZE; colI++) {
 				GameTile tile = createTileAtCoordinate( new Coordinate(rowI, colI) );
 				if (rowI == 3 && colI == 3) {
 					emptyTile = tile;
@@ -362,13 +363,13 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		int viewHeight = getHeight();
 		int tileWidth = 0; 
 		if (viewWidth > viewHeight) {
-			tileWidth = viewHeight/4;
+			tileWidth = viewHeight/GRID_SIZE;
 		} else {
-			tileWidth = viewWidth/4;
+			tileWidth = viewWidth/GRID_SIZE;
 		}
 		tileSize = new Size(tileWidth, tileWidth);
-		int gameboardWidth = tileSize.width * 4;
-		int gameboardHeight = tileSize.height * 4;
+		int gameboardWidth = tileSize.width * GRID_SIZE;
+		int gameboardHeight = tileSize.height * GRID_SIZE;
 		int gameboardTop = viewHeight/2 - gameboardHeight/2;
 		int gameboardLeft = viewWidth/2 - gameboardWidth/2;
 		gameboardRect = new RectF(gameboardLeft, gameboardTop, gameboardLeft + gameboardWidth, gameboardTop + gameboardHeight);
