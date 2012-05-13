@@ -1,4 +1,4 @@
-package com.tackmobile;
+package cz.destil.sliderpuzzle;
 
 import java.util.ArrayList;
 import java.util.HashSet;

@@ -1,4 +1,4 @@
-package com.tackmobile;
+package cz.destil.sliderpuzzle;
 
 import android.app.Activity;
 import android.os.Bundle;

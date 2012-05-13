@@ -1,6 +1,6 @@
-package com.tackmobile;
+package cz.destil.sliderpuzzle;
 
-import com.tackmobile.GameboardView.Coordinate;
+import cz.destil.sliderpuzzle.GameboardView.Coordinate;
 
 import android.content.Context;
 import android.widget.ImageView;

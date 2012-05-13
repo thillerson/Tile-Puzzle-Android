@@ -2,8 +2,8 @@
 <merge xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
-	<com.tackmobile.GameboardView android:id="@+id/gameboard"
+	<cz.destil.sliderpuzzle.GameboardView android:id="@+id/gameboard"
 	    android:layout_width="match_parent"
 	    android:layout_height="match_parent">
-	</com.tackmobile.GameboardView>
+	</cz.destil.sliderpuzzle.GameboardView>
 </merge>

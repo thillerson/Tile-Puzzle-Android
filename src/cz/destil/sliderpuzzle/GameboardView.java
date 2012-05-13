@@ -1,4 +1,4 @@
-package com.tackmobile;
+package cz.destil.sliderpuzzle;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -360,8 +360,13 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	protected void determineGameboardSizes() {
 		int viewWidth = getWidth();
 		int viewHeight = getHeight();
-		// ostensibly tiles can be sized based on view geometry. Hardcode for now.
-		tileSize = new Size(68, 68);
+		int tileWidth = 0; 
+		if (viewWidth > viewHeight) {
+			tileWidth = viewHeight/4;
+		} else {
+			tileWidth = viewWidth/4;
+		}
+		tileSize = new Size(tileWidth, tileWidth);
 		int gameboardWidth = tileSize.width * 4;
 		int gameboardHeight = tileSize.height * 4;
 		int gameboardTop = viewHeight/2 - gameboardHeight/2;
