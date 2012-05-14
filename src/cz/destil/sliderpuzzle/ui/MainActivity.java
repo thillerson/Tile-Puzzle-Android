@@ -1,5 +1,6 @@
 package cz.destil.sliderpuzzle.ui;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import com.actionbarsherlock.app.SherlockActivity;
@@ -35,8 +36,11 @@ public class MainActivity extends SherlockActivity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.new_game:
+			GameboardView gameboard = (GameboardView) findViewById(R.id.gameboard);
+			gameboard.fillTiles();
 			return true;
 		case R.id.about:
+			startActivity(new Intent(this, AboutActivity.class));
 			return true;
 		default:
 			return super.onOptionsItemSelected(item);

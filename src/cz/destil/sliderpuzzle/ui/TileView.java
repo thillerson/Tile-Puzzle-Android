@@ -18,11 +18,12 @@ import android.widget.ImageView;
 public class TileView extends ImageView {
 
 	public Coordinate coordinate;
+	public int originalIndex;
 	private boolean empty;
 
-	public TileView(Context context, Coordinate coordinate) {
+	public TileView(Context context, int originalIndex) {
 		super(context);
-		this.coordinate = coordinate;
+		this.originalIndex = originalIndex;
 	}
 
 	public boolean isEmpty() {

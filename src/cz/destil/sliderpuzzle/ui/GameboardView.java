@@ -36,8 +36,6 @@ import cz.destil.sliderpuzzle.util.TileSlicer;
  */
 public class GameboardView extends RelativeLayout implements OnTouchListener {
 
-	@SuppressWarnings("unused")
-	private static final String TAG = "GameboardView";
 	public static final int GRID_SIZE = 4; // 4x4
 	private int tileSize;
 	private ArrayList<TileView> tiles;
@@ -56,12 +54,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		super.onLayout(changed, left, top, right, bottom);
 		if (!boardCreated) {
 			determineGameboardSizes();
-			// load image to slicer
-			Drawable globe = getResources().getDrawable(R.drawable.globe);
-			Bitmap original = ((BitmapDrawable) globe).getBitmap();
-			TileSlicer tileSlicer = new TileSlicer(original, GRID_SIZE);
-
-			fillTiles(tileSlicer);
+			fillTiles();
 			boardCreated = true;
 		}
 	}
@@ -78,8 +71,6 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		} else {
 			tileSize = viewWidth / GRID_SIZE;
 		}
-		// leave a bit on the sides
-		tileSize -= 5;
 		int gameboardSize = tileSize * GRID_SIZE;
 		// center gameboard
 		int gameboardTop = viewHeight / 2 - gameboardSize / 2;
@@ -89,23 +80,22 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	}
 
 	/**
-	 * Fills gameboard with tiles
-	 * 
-	 * @param tileSlicer
-	 *            TileSlicer with loaded image
+	 * Fills gameboard with tiles sliced from the globe image.
 	 */
-	private void fillTiles(TileSlicer tileSlicer) {
+	public void fillTiles() {
+		removeAllViews();
+		// load image to slicer
+		Drawable globe = getResources().getDrawable(R.drawable.globe);
+		Bitmap original = ((BitmapDrawable) globe).getBitmap();
+		TileSlicer tileSlicer = new TileSlicer(original, GRID_SIZE, getContext());
+		// fill gameboard with slices
 		tiles = new ArrayList<TileView>();
 		for (int rowI = 0; rowI < GRID_SIZE; rowI++) {
 			for (int colI = 0; colI < GRID_SIZE; colI++) {
-				TileView tile = new TileView(getContext(), new Coordinate(rowI, colI));
-				if (rowI == GRID_SIZE - 1 && colI == GRID_SIZE - 1) {
-					// empty tile
+				TileView tile = tileSlicer.getSlice(TileSlicer.RANDOM_SLICE);
+				tile.coordinate = new Coordinate(rowI, colI);
+				if (tile.isEmpty()) {
 					emptyTile = tile;
-					tile.setEmpty(true);
-				} else {
-					// tile with image - set random tile from slicer
-					tile.setImageBitmap(tileSlicer.getRandomSlice());
 				}
 				placeTile(tile);
 				tiles.add(tile);

@@ -3,10 +3,12 @@ package cz.destil.sliderpuzzle.util;
 import java.util.ArrayList;
 import java.util.Random;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import cz.destil.sliderpuzzle.ui.TileView;
 
 /**
  * 
@@ -21,12 +23,12 @@ import android.graphics.Paint;
  */
 public class TileSlicer {
 
-	@SuppressWarnings("unused")
-	private static final String TAG = "TileSlicer";
+	public static final int RANDOM_SLICE = -1;
 	private Bitmap original;
 	private int tileSize, gridSize;
 	private ArrayList<Bitmap> slices;
 	private Random random;
+	private Context context;
 
 	/**
 	 * Initializes TileSlicer.
@@ -36,11 +38,12 @@ public class TileSlicer {
 	 * @param gridSize
 	 *            Grid size, for example 4 for 4x4 grid
 	 */
-	public TileSlicer(Bitmap original, int gridSize) {
+	public TileSlicer(Bitmap original, int gridSize, Context context) {
 		super();
 		this.original = original;
 		this.gridSize = gridSize;
 		this.tileSize = original.getWidth() / gridSize;
+		this.context = context;
 		random = new Random();
 		slices = new ArrayList<Bitmap>();
 		sliceOriginal();
@@ -54,6 +57,10 @@ public class TileSlicer {
 		Bitmap bitmap;
 		for (int rowI = 0; rowI < gridSize; rowI++) {
 			for (int colI = 0; colI < gridSize; colI++) {
+				// don't slice last part - empty slice
+				if (rowI == gridSize - 1 && colI == gridSize - 1) {
+					continue;
+				}
 				x = rowI * tileSize;
 				y = colI * tileSize;
 				// slice
@@ -75,17 +82,28 @@ public class TileSlicer {
 	}
 
 	/**
-	 * Serves random slice and frees it from memory
+	 * Serves slice and frees it from memory
 	 * 
-	 * @return Bitmap of random slice
+	 * @param index
+	 *            index of the slice. Serves random slice if
+	 *            TileSlicer.RANDOM_SLICE.
+	 * @return TileView with the image or empty tile if there are no such
+	 *         slices.
 	 */
-	public Bitmap getRandomSlice() {
+	public TileView getSlice(int index) {
+		TileView tile = null;
 		if (slices.size() > 0) {
-			int randomIndex = random.nextInt(slices.size());
-			Bitmap drawable = slices.remove(randomIndex);
-			return drawable;
+			if (index == RANDOM_SLICE) {
+				index = random.nextInt(slices.size());
+			}
+			tile = new TileView(context, index);
+			tile.setImageBitmap(slices.remove(index));
+		} else {
+			// empty slice
+			tile = new TileView(context, index);
+			tile.setEmpty(true);
 		}
-		return null;
+		return tile;
 	}
 
 }

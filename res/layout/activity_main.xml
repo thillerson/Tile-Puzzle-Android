@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<cz.destil.sliderpuzzle.ui.GameboardView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/gameboard"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background" >
+    android:padding="5dp" >
 
-</cz.destil.sliderpuzzle.ui.GameboardView>
+    <cz.destil.sliderpuzzle.ui.GameboardView
+        android:id="@+id/gameboard"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+    </cz.destil.sliderpuzzle.ui.GameboardView>
+
+</LinearLayout>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="5dp" >
+
+    <TextView
+        android:id="@+id/created_by"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="@string/created_by" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/opensource_used" />
+
+    <TextView
+        android:id="@+id/project2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/project1" />
+
+    <TextView
+        android:id="@+id/project1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/project2" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/check_out" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/settle_up"
+        android:contentDescription="@string/settle_up" />
+
+    <TextView
+        android:id="@+id/settle_up"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/settle_up" />
+
+</LinearLayout>

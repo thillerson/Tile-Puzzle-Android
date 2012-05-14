@@ -7,5 +7,16 @@
     <string name="new_game">New Game</string>
     <!-- Main menu item for launching about screen -->
     <string name="about">About</string>
-
+    <!-- First text in about screen -->
+    <string name="created_by">This app was created by &lt;a href="http://www.destil.cz">David Vávra&lt;/a>.</string>
+    <!-- Second text in about screen -->
+    <string name="opensource_used">The following open-source projects were used:</string>
+    <!-- First opensource project in about screen -->
+    <string name="project1">- &lt;a href="https://github.com/thillerson/Android-Slider-Puzzle">Android-Slider-Puzzle&lt;/a> by Tony Hillerson (MIT License)</string>
+    <!-- Second opensource project in about screen -->
+    <string name="project2">- &lt;a href="http://actionbarsherlock.com/">ActionBarSherlock&lt;/a> by Jake Wharton (Apache License)</string>
+    <!-- Third text in about screen -->
+    <string name="check_out">Check out my most successful app:</string>
+    <!-- Link to the app Settle Up in about screen -->
+    <string name="settle_up">&lt;a href="https://play.google.com/store/apps/details?id=cz.destil.settleup">Settle Up&lt;/a</string>
 </resources>
