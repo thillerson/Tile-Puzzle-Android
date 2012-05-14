@@ -1,7 +1,10 @@
 package cz.destil.sliderpuzzle.ui;
 
+import java.util.LinkedList;
+
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.actionbarsherlock.app.SherlockActivity;
 import com.actionbarsherlock.view.Menu;
@@ -19,10 +22,20 @@ import cz.destil.sliderpuzzle.R;
  */
 public class MainActivity extends SherlockActivity {
 
+	private GameBoardView gameBoard;
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		gameBoard = (GameBoardView) findViewById(R.id.gameboard);
+		// use preserved tile locations when orientation changed
+		@SuppressWarnings({ "deprecation", "unchecked" })
+		final LinkedList<Integer> tileOrder = (LinkedList<Integer>) getLastNonConfigurationInstance();
+		if (tileOrder != null) {
+			Log.d("tile locations",tileOrder.toString());
+			gameBoard.setTileOrder(tileOrder);
+		}
 	}
 
 	@Override
@@ -36,8 +49,8 @@ public class MainActivity extends SherlockActivity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.new_game:
-			GameboardView gameboard = (GameboardView) findViewById(R.id.gameboard);
-			gameboard.fillTiles();
+			gameBoard.setTileOrder(null);
+			gameBoard.fillTiles();
 			return true;
 		case R.id.about:
 			startActivity(new Intent(this, AboutActivity.class));
@@ -47,5 +60,10 @@ public class MainActivity extends SherlockActivity {
 		}
 	}
 
-	// TODO: preserve state when rotated
+	@Override
+	public Object onRetainNonConfigurationInstance() {
+		// preserve state when rotated
+		Log.d("tile locations",gameBoard.getTileOrder().toString());
+		return gameBoard.getTileOrder();
+	}
 }

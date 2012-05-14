@@ -1,7 +1,8 @@
 package cz.destil.sliderpuzzle.util;
 
-import java.util.ArrayList;
-import java.util.Random;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -26,8 +27,9 @@ public class TileSlicer {
 	public static final int RANDOM_SLICE = -1;
 	private Bitmap original;
 	private int tileSize, gridSize;
-	private ArrayList<Bitmap> slices;
-	private Random random;
+	private List<Bitmap> slices;
+	private int lastSliceServed;
+	private List<Integer> sliceOrder;
 	private Context context;
 
 	/**
@@ -44,8 +46,7 @@ public class TileSlicer {
 		this.gridSize = gridSize;
 		this.tileSize = original.getWidth() / gridSize;
 		this.context = context;
-		random = new Random();
-		slices = new ArrayList<Bitmap>();
+		slices = new LinkedList<Bitmap>();
 		sliceOriginal();
 	}
 
@@ -55,30 +56,64 @@ public class TileSlicer {
 	private void sliceOriginal() {
 		int x, y;
 		Bitmap bitmap;
+		lastSliceServed = 0;
 		for (int rowI = 0; rowI < gridSize; rowI++) {
 			for (int colI = 0; colI < gridSize; colI++) {
 				// don't slice last part - empty slice
 				if (rowI == gridSize - 1 && colI == gridSize - 1) {
 					continue;
+				} else {
+					x = rowI * tileSize;
+					y = colI * tileSize;
+					// slice
+					bitmap = Bitmap.createBitmap(original, x, y, tileSize, tileSize);
+					// draw border lines
+					Canvas canvas = new Canvas(bitmap);
+					Paint paint = new Paint();
+					paint.setColor(Color.parseColor("#fbfdff"));
+					int end = tileSize - 1;
+					canvas.drawLine(0, 0, 0, end, paint);
+					canvas.drawLine(0, end, end, end, paint);
+					canvas.drawLine(end, end, end, 0, paint);
+					canvas.drawLine(end, 0, 0, 0, paint);
+					slices.add(bitmap);
 				}
-				x = rowI * tileSize;
-				y = colI * tileSize;
-				// slice
-				bitmap = Bitmap.createBitmap(original, x, y, tileSize, tileSize);
-				// draw border lines
-				Canvas canvas = new Canvas(bitmap);
-				Paint paint = new Paint();
-				paint.setColor(Color.parseColor("#fbfdff"));
-				int end = tileSize - 1;
-				canvas.drawLine(0, 0, 0, end, paint);
-				canvas.drawLine(0, end, end, end, paint);
-				canvas.drawLine(end, end, end, 0, paint);
-				canvas.drawLine(end, 0, 0, 0, paint);
-				slices.add(bitmap);
 			}
 		}
 		// remove original bitmap from memory
 		original = null;
+	}
+
+	/**
+	 * Randomizes slices in case no previous instance is available.
+	 */
+	public void randomizeSlices() {
+		// randomize first 15 slices
+		Collections.shuffle(slices);
+		// last one is empty slice
+		slices.add(null);
+		sliceOrder = null;
+	}
+
+	/**
+	 * Sets slice order in case of previous instance is available, eg. from
+	 * screen rotation.
+	 * 
+	 * @param order
+	 *            list of integers marking order of slices
+	 */
+	public void setSliceOrder(List<Integer> order) {
+		List<Bitmap> newSlices = new LinkedList<Bitmap>();
+		for (int o : order) {
+			if (o < slices.size()) {
+				newSlices.add(slices.get(o));
+			} else {
+				// empty slice
+				newSlices.add(null);
+			}
+		}
+		sliceOrder = order;
+		slices = newSlices;
 	}
 
 	/**
@@ -90,18 +125,21 @@ public class TileSlicer {
 	 * @return TileView with the image or empty tile if there are no such
 	 *         slices.
 	 */
-	public TileView getSlice(int index) {
+	public TileView getTile() {
 		TileView tile = null;
 		if (slices.size() > 0) {
-			if (index == RANDOM_SLICE) {
-				index = random.nextInt(slices.size());
+			int originalIndex;
+			if (sliceOrder == null) {
+				originalIndex = lastSliceServed++;
+			} else {
+				originalIndex = sliceOrder.get(lastSliceServed++);
 			}
-			tile = new TileView(context, index);
-			tile.setImageBitmap(slices.remove(index));
-		} else {
-			// empty slice
-			tile = new TileView(context, index);
-			tile.setEmpty(true);
+			tile = new TileView(context, originalIndex);
+			if (slices.get(0) == null) {
+				// empty slice
+				tile.setEmpty(true);
+			}
+			tile.setImageBitmap(slices.remove(0));
 		}
 		return tile;
 	}

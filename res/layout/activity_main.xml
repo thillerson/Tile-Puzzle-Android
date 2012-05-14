@@ -4,10 +4,10 @@
     android:layout_height="match_parent"
     android:padding="5dp" >
 
-    <cz.destil.sliderpuzzle.ui.GameboardView
+    <cz.destil.sliderpuzzle.ui.GameBoardView
         android:id="@+id/gameboard"
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
-    </cz.destil.sliderpuzzle.ui.GameboardView>
+    </cz.destil.sliderpuzzle.ui.GameBoardView>
 
 </LinearLayout>

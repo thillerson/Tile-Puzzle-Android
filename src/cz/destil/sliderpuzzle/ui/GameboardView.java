@@ -1,6 +1,7 @@
 package cz.destil.sliderpuzzle.ui;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import android.animation.Animator;
 import android.animation.Animator.AnimatorListener;
@@ -34,7 +35,7 @@ import cz.destil.sliderpuzzle.util.TileSlicer;
  * @author David Vavra
  * 
  */
-public class GameboardView extends RelativeLayout implements OnTouchListener {
+public class GameBoardView extends RelativeLayout implements OnTouchListener {
 
 	public static final int GRID_SIZE = 4; // 4x4
 	private int tileSize;
@@ -44,8 +45,9 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	private RectF gameboardRect;
 	private PointF lastDragPoint;
 	private ArrayList<GameTileMotionDescriptor> currentMotionDescriptors;
+	private LinkedList<Integer> tileOrder;
 
-	public GameboardView(Context context, AttributeSet attrSet) {
+	public GameBoardView(Context context, AttributeSet attrSet) {
 		super(context, attrSet);
 	}
 
@@ -89,10 +91,20 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		Bitmap original = ((BitmapDrawable) globe).getBitmap();
 		TileSlicer tileSlicer = new TileSlicer(original, GRID_SIZE, getContext());
 		// fill gameboard with slices
+		if (tileOrder == null) {
+			tileSlicer.randomizeSlices();
+		} else {
+			tileSlicer.setSliceOrder(tileOrder);
+		}
 		tiles = new ArrayList<TileView>();
 		for (int rowI = 0; rowI < GRID_SIZE; rowI++) {
 			for (int colI = 0; colI < GRID_SIZE; colI++) {
-				TileView tile = tileSlicer.getSlice(TileSlicer.RANDOM_SLICE);
+				TileView tile;
+				if (tileOrder == null) {
+					tile = tileSlicer.getTile();
+				} else {
+					tile = tileSlicer.getTile();
+				}
 				tile.coordinate = new Coordinate(rowI, colI);
 				if (tile.isEmpty()) {
 					emptyTile = tile;
@@ -186,8 +198,8 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	}
 
 	/**
-	 * Follows finger while dragging all currently moved tiles.
-	 * Allows movement only along x axis for row and y axis for column.
+	 * Follows finger while dragging all currently moved tiles. Allows movement
+	 * only along x axis for row and y axis for column.
 	 * 
 	 * @param event
 	 */
@@ -452,6 +464,32 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		int top = (coordinate.row * tileSize) + gameboardY;
 		int left = (coordinate.column * tileSize) + gameboardX;
 		return new Rect(left, top, left + tileSize, top + tileSize);
+	}
+
+	/**
+	 * Returns current tile locations. Useful for preserving state when
+	 * orientation changes.
+	 * 
+	 * @return current tile locations
+	 */
+	public LinkedList<Integer> getTileOrder() {
+		LinkedList<Integer> tileLocations = new LinkedList<Integer>();
+		for (int rowI = 0; rowI < GRID_SIZE; rowI++) {
+			for (int colI = 0; colI < GRID_SIZE; colI++) {
+				TileView tile = getTileAtCoordinate(new Coordinate(rowI, colI));
+				tileLocations.add(tile.originalIndex);
+			}
+		}
+		return tileLocations;
+	}
+
+	/**
+	 * Sets tile locations from previous state.
+	 * 
+	 * @param tileLocations list of integers marking order
+	 */
+	public void setTileOrder(LinkedList<Integer> tileLocations) {
+		this.tileOrder = tileLocations;
 	}
 
 	/**
