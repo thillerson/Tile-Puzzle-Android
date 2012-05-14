@@ -1,7 +1,6 @@
 package cz.destil.sliderpuzzle.ui;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 import android.animation.Animator;
 import android.animation.Animator.AnimatorListener;
@@ -144,7 +143,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				// during the gesture
 			} else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
 				if (lastDragPoint != null) {
-					moveDraggedTilesByMotionEventDelta(event);
+					followFinger(event);
 				}
 				lastDragPoint = new PointF(event.getRawX(), event.getRawY());
 				// end of gesture
@@ -153,13 +152,13 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				currentMotionDescriptors = getTilesBetweenEmptyTileAndTile(movedTile);
 				// if drag was over 50%, do the move
 				if (lastDragPoint != null && lastDragMovedAtLeastHalfWay()) {
-					animateCurrentMovedTilesToEmptySpace();
+					animateTilesToEmptySpace();
 					// if it was a click, do the move
 				} else if (lastDragPoint == null || lastDragMovedMinimally()) {
-					animateCurrentMovedTilesToEmptySpace();
+					animateTilesToEmptySpace();
 					// if it was a drag less than 50%, animate tiles back
 				} else {
-					animateMovedTilesBackToOrigin();
+					animateTilesBackToOrigin();
 				}
 				currentMotionDescriptors = null;
 				lastDragPoint = null;
@@ -196,7 +195,13 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return false;
 	}
 
-	private void moveDraggedTilesByMotionEventDelta(MotionEvent event) {
+	/**
+	 * Follows finger while dragging all currently moved tiles.
+	 * Allows movement only along x axis for row and y axis for column.
+	 * 
+	 * @param event
+	 */
+	private void followFinger(MotionEvent event) {
 		boolean impossibleMove = true;
 		float dxTile, dyTile;
 		float dxEvent = event.getRawX() - lastDragPoint.x;
@@ -206,9 +211,9 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			tile = gameTileMotionDescriptor.tile;
 			dxTile = tile.getX() + dxEvent;
 			dyTile = tile.getY() + dyEvent;
-
+			// detect if this move is valid
 			RectF candidateRect = new RectF(dxTile, dyTile, dxTile + tile.getWidth(), dyTile + tile.getHeight());
-			HashSet<TileView> tilesToCheck = null;
+			ArrayList<TileView> tilesToCheck = null;
 			if (tile.coordinate.row == emptyTile.coordinate.row) {
 				tilesToCheck = allTilesInRow(tile.coordinate.row);
 			} else if (tile.coordinate.column == emptyTile.coordinate.column) {
@@ -216,11 +221,12 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			}
 
 			boolean candidateRectInGameboard = (gameboardRect.contains(candidateRect));
-			boolean collides = candidateRectForTileCollidesWithAnyTileInSet(candidateRect, tile, tilesToCheck);
+			boolean collides = collidesWithTitles(candidateRect, tile, tilesToCheck);
 
 			impossibleMove = impossibleMove && (!candidateRectInGameboard || collides);
 		}
 		if (!impossibleMove) {
+			// perform move for all moved tiles in the descriptors
 			for (GameTileMotionDescriptor gameTileMotionDescriptor : currentMotionDescriptors) {
 				tile = gameTileMotionDescriptor.tile;
 				dxTile = tile.getX() + dxEvent;
@@ -236,10 +242,18 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		}
 	}
 
-	private boolean candidateRectForTileCollidesWithAnyTileInSet(RectF candidateRect, TileView tile,
-			HashSet<TileView> set) {
+	/**
+	 * @param candidateRect
+	 *            rectangle to check
+	 * @param tile
+	 *            tile belonging to rectangle
+	 * @param tilesToCheck
+	 *            list of tiles to check
+	 * @return Whether candidateRect collides with any tilesToCheck
+	 */
+	private boolean collidesWithTitles(RectF candidateRect, TileView tile, ArrayList<TileView> tilesToCheck) {
 		RectF otherTileRect;
-		for (TileView otherTile : set) {
+		for (TileView otherTile : tilesToCheck) {
 			if (!otherTile.isEmpty() && otherTile != tile) {
 				otherTileRect = new RectF(otherTile.getX(), otherTile.getY(), otherTile.getX() + otherTile.getWidth(),
 						otherTile.getY() + otherTile.getHeight());
@@ -251,7 +265,11 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return false;
 	}
 
-	private void animateCurrentMovedTilesToEmptySpace() {
+	/**
+	 * Performs animation of currently moved tiles into empty space. Happens
+	 * when valid tile is clicked or is dragged over 50%.
+	 */
+	private void animateTilesToEmptySpace() {
 		emptyTile.setX(movedTile.getX());
 		emptyTile.setY(movedTile.getY());
 		emptyTile.coordinate = movedTile.coordinate;
@@ -281,7 +299,11 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		}
 	}
 
-	private void animateMovedTilesBackToOrigin() {
+	/**
+	 * Performs animation of currently moved tiles back to origin. Happens when
+	 * the drag was less than 50%.
+	 */
+	private void animateTilesBackToOrigin() {
 		ObjectAnimator animator;
 		if (currentMotionDescriptors != null) {
 			for (final GameTileMotionDescriptor motionDescriptor : currentMotionDescriptors) {
@@ -307,6 +329,14 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		}
 	}
 
+	/**
+	 * Finds tiles between checked tile and empty tile and initializes motion
+	 * descriptors for those tiles.
+	 * 
+	 * @param tile
+	 *            A tile to be checked
+	 * @return list of tiles between checked tile and empty tile
+	 */
 	private ArrayList<GameTileMotionDescriptor> getTilesBetweenEmptyTileAndTile(TileView tile) {
 		ArrayList<GameTileMotionDescriptor> descriptors = new ArrayList<GameTileMotionDescriptor>();
 		Coordinate coordinate, finalCoordinate;
@@ -315,6 +345,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		Rect finalRect, currentRect;
 		float axialDelta;
 		if (tile.isToRightOf(emptyTile)) {
+			// add all tiles left of the tile
 			for (int i = tile.coordinate.column; i > emptyTile.coordinate.column; i--) {
 				coordinate = new Coordinate(tile.coordinate.row, i);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate);
@@ -329,6 +360,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				descriptors.add(motionDescriptor);
 			}
 		} else if (tile.isToLeftOf(emptyTile)) {
+			// add all tiles right of the tile
 			for (int i = tile.coordinate.column; i < emptyTile.coordinate.column; i++) {
 				coordinate = new Coordinate(tile.coordinate.row, i);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate);
@@ -343,6 +375,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				descriptors.add(motionDescriptor);
 			}
 		} else if (tile.isAbove(emptyTile)) {
+			// add all tiles bellow the tile
 			for (int i = tile.coordinate.row; i < emptyTile.coordinate.row; i++) {
 				coordinate = new Coordinate(i, tile.coordinate.column);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate);
@@ -357,6 +390,7 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 				descriptors.add(motionDescriptor);
 			}
 		} else if (tile.isBelow(emptyTile)) {
+			// add all tiles above the tile
 			for (int i = tile.coordinate.row; i > emptyTile.coordinate.row; i--) {
 				coordinate = new Coordinate(i, tile.coordinate.column);
 				foundTile = (tile.coordinate.matches(coordinate)) ? tile : getTileAtCoordinate(coordinate);
@@ -374,6 +408,11 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return descriptors;
 	}
 
+	/**
+	 * @param coordinate
+	 *            coordinate of the tile
+	 * @return tile at given coordinate
+	 */
 	private TileView getTileAtCoordinate(Coordinate coordinate) {
 		for (TileView tile : tiles) {
 			if (tile.coordinate.matches(coordinate)) {
@@ -383,8 +422,13 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return null;
 	}
 
-	private HashSet<TileView> allTilesInRow(int row) {
-		HashSet<TileView> tilesInRow = new HashSet<TileView>();
+	/**
+	 * @param row
+	 *            number of row
+	 * @return list of tiles in the row
+	 */
+	private ArrayList<TileView> allTilesInRow(int row) {
+		ArrayList<TileView> tilesInRow = new ArrayList<TileView>();
 		for (TileView tile : tiles) {
 			if (tile.coordinate.row == row) {
 				tilesInRow.add(tile);
@@ -393,8 +437,13 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return tilesInRow;
 	}
 
-	private HashSet<TileView> allTilesInColumn(int column) {
-		HashSet<TileView> tilesInColumn = new HashSet<TileView>();
+	/**
+	 * @param column
+	 *            number of column
+	 * @return list of tiles in the column
+	 */
+	private ArrayList<TileView> allTilesInColumn(int column) {
+		ArrayList<TileView> tilesInColumn = new ArrayList<TileView>();
 		for (TileView tile : tiles) {
 			if (tile.coordinate.column == column) {
 				tilesInColumn.add(tile);
@@ -403,6 +452,10 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return tilesInColumn;
 	}
 
+	/**
+	 * @param coordinate
+	 * @return Rectangle for given coordinate
+	 */
 	private Rect rectForCoordinate(Coordinate coordinate) {
 		int gameboardY = (int) Math.floor(gameboardRect.top);
 		int gameboardX = (int) Math.floor(gameboardRect.left);
@@ -411,10 +464,13 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return new Rect(left, top, left + tileSize, top + tileSize);
 	}
 
+	/**
+	 * Describes movement of the tile. It is used to move several tiles at once.
+	 */
 	public class GameTileMotionDescriptor {
 
 		public Rect finalRect;
-		public String property;
+		public String property; // "x" or "y"
 		public TileView tile;
 		public float from, to, axialDelta;
 		public Coordinate finalCoordinate;
@@ -427,6 +483,9 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			this.property = property;
 		}
 
+		/**
+		 * @return current position of the tile
+		 */
 		public float currentPosition() {
 			if (property.equals("x")) {
 				return tile.getX();
@@ -436,6 +495,10 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			return 0;
 		}
 
+		/**
+		 * @return original position of the tile. It is used in movement to
+		 *         original position.
+		 */
 		public float originalPosition() {
 			Rect originalRect = rectForCoordinate(tile.coordinate);
 			if (property.equals("x")) {
