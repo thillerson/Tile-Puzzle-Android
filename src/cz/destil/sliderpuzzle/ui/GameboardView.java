@@ -15,6 +15,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.View;
@@ -148,6 +149,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 			if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
 				movedTile = touchedTile;
 				currentMotionDescriptors = getTilesBetweenEmptyTileAndTile(movedTile);
+				movedTile.numberOfDrags = 0;
 				// during the gesture
 			} else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
 				if (lastDragPoint != null) {
@@ -158,13 +160,9 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 			} else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
 				// reload the motion descriptors in case of position change.
 				currentMotionDescriptors = getTilesBetweenEmptyTileAndTile(movedTile);
-				// if drag was over 50%, do the move
-				if (lastDragPoint != null && lastDragMovedAtLeastHalfWay()) {
+				// if drag was over 50% or it's click, do the move
+				if (lastDragMovedAtLeastHalfWay() || isClick()) {
 					animateTilesToEmptySpace();
-					// if it was a click, do the move
-				} else if (lastDragPoint == null || lastDragMovedMinimally()) {
-					animateTilesToEmptySpace();
-					// if it was a drag less than 50%, animate tiles back
 				} else {
 					animateTilesBackToOrigin();
 				}
@@ -180,7 +178,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	 * @return Whether last drag moved with the tile more than 50% of its size
 	 */
 	private boolean lastDragMovedAtLeastHalfWay() {
-		if (currentMotionDescriptors != null && currentMotionDescriptors.size() > 0) {
+		if (lastDragPoint != null && currentMotionDescriptors != null && currentMotionDescriptors.size() > 0) {
 			GameTileMotionDescriptor firstMotionDescriptor = currentMotionDescriptors.get(0);
 			if (firstMotionDescriptor.axialDelta > tileSize / 2) {
 				return true;
@@ -190,12 +188,17 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	}
 
 	/**
-	 * @return Whether last drag moved just a little = involuntary move during
-	 *         click
+	 * Detects click - either true click (no drags) or small involuntary drag
+	 * 
+	 * @return Whether last gesture was a click
 	 */
-	private boolean lastDragMovedMinimally() {
-		if (currentMotionDescriptors != null && currentMotionDescriptors.size() > 0) {
+	private boolean isClick() {
+		if (lastDragPoint == null) {
+			return true; // no drag
+		}
+		if (currentMotionDescriptors != null && currentMotionDescriptors.size() > 0 && movedTile.numberOfDrags < 5) {
 			GameTileMotionDescriptor firstMotionDescriptor = currentMotionDescriptors.get(0);
+			// just very small drag counts as click
 			if (firstMotionDescriptor.axialDelta < tileSize / 20) {
 				return true;
 			}
@@ -214,11 +217,13 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 		float dxEvent = event.getRawX() - lastDragPoint.x;
 		float dyEvent = event.getRawY() - lastDragPoint.y;
 		TileView tile;
+		movedTile.numberOfDrags++;
 		for (GameTileMotionDescriptor descriptor : currentMotionDescriptors) {
 			tile = descriptor.tile;
 			Pair<Float, Float> xy = getXY(tile, dxEvent, dyEvent, descriptor.direction);
 			// detect if this move is valid
-			RectF candidateRect = new RectF(xy.first, xy.second, xy.first + tile.getWidth(), xy.second + tile.getHeight());
+			RectF candidateRect = new RectF(xy.first, xy.second, xy.first + tile.getWidth(), xy.second
+					+ tile.getHeight());
 			ArrayList<TileView> tilesToCheck = null;
 			if (tile.coordinate.row == emptyTile.coordinate.row) {
 				tilesToCheck = allTilesInRow(tile.coordinate.row);
@@ -244,10 +249,15 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 
 	/**
 	 * Computes new x,y coordinates for given tile in given direction (x or y).
-	 * @param tile tile to check
-	 * @param dxEvent change of x coordinate from touch gesture
-	 * @param dyEvent change of y coordinate from touch gesture
-	 * @param direction x or y direction
+	 * 
+	 * @param tile
+	 *            tile to check
+	 * @param dxEvent
+	 *            change of x coordinate from touch gesture
+	 * @param dyEvent
+	 *            change of y coordinate from touch gesture
+	 * @param direction
+	 *            x or y direction
 	 * @return pair of first x coordinates, second y coordinates
 	 */
 	private Pair<Float, Float> getXY(TileView tile, float dxEvent, float dyEvent, Direction direction) {

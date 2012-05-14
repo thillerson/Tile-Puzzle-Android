@@ -19,6 +19,7 @@ public class TileView extends ImageView {
 
 	public Coordinate coordinate;
 	public int originalIndex;
+	public int numberOfDrags;
 	private boolean empty;
 
 	public TileView(Context context, int originalIndex) {
