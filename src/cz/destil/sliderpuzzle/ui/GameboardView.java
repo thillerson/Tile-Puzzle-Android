@@ -197,7 +197,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 		if (lastDragPoint == null) {
 			return true; // no drag
 		}
-		if (currentMotionDescriptors != null && currentMotionDescriptors.size() > 0 && movedTile.numberOfDrags < 5) {
+		// just small amount of MOVE events counts as click
+		if (currentMotionDescriptors != null && currentMotionDescriptors.size() > 0 && movedTile.numberOfDrags < 10) {
 			GameTileMotionDescriptor firstMotionDescriptor = currentMotionDescriptors.get(0);
 			// just very small drag counts as click
 			if (firstMotionDescriptor.axialDelta < tileSize / 20) {
@@ -221,7 +222,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 		movedTile.numberOfDrags++;
 		for (GameTileMotionDescriptor descriptor : currentMotionDescriptors) {
 			tile = descriptor.tile;
-			Pair<Float, Float> xy = getXYFromEvent(tile, dxEvent, dyEvent, descriptor.direction); 			
+			Pair<Float, Float> xy = getXYFromEvent(tile, dxEvent, dyEvent, descriptor.direction);
 			// detect if this move is valid
 			RectF candidateRect = new RectF(xy.first, xy.second, xy.first + tile.getWidth(), xy.second
 					+ tile.getHeight());
@@ -286,8 +287,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 		RectF otherTileRect;
 		for (TileView otherTile : tilesToCheck) {
 			if (!otherTile.isEmpty() && otherTile != tile) {
-				otherTileRect = new RectF(otherTile.getXPos(), otherTile.getYPos(), otherTile.getXPos() + otherTile.getWidth(),
-						otherTile.getYPos() + otherTile.getHeight());
+				otherTileRect = new RectF(otherTile.getXPos(), otherTile.getYPos(), otherTile.getXPos()
+						+ otherTile.getWidth(), otherTile.getYPos() + otherTile.getHeight());
 				if (RectF.intersects(otherTileRect, candidateRect)) {
 					return true;
 				}
@@ -351,6 +352,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 					}
 
 					public void onAnimationEnd(Animator animation) {
+						motionDescriptor.tile.setXY(motionDescriptor.originalRect.left,
+								motionDescriptor.originalRect.top);
 					}
 				});
 				animator.start();
@@ -414,7 +417,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 				currentRect = rectForCoordinate(foundTile.coordinate);
 				finalRect = rectForCoordinate(finalCoordinate);
 				axialDelta = Math.abs(foundTile.getYPos() - currentRect.top);
-				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.Y, foundTile.getYPos(), finalRect.top);
+				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.Y, foundTile.getYPos(),
+						finalRect.top);
 				motionDescriptor.finalCoordinate = finalCoordinate;
 				motionDescriptor.finalRect = finalRect;
 				motionDescriptor.axialDelta = axialDelta;
@@ -429,7 +433,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 				currentRect = rectForCoordinate(foundTile.coordinate);
 				finalRect = rectForCoordinate(finalCoordinate);
 				axialDelta = Math.abs(foundTile.getYPos() - currentRect.top);
-				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.Y, foundTile.getYPos(), finalRect.top);
+				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.Y, foundTile.getYPos(),
+						finalRect.top);
 				motionDescriptor.finalCoordinate = finalCoordinate;
 				motionDescriptor.finalRect = finalRect;
 				motionDescriptor.axialDelta = axialDelta;
@@ -527,7 +532,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	 */
 	public class GameTileMotionDescriptor {
 
-		public Rect finalRect;
+		public Rect finalRect, originalRect;
 		public Direction direction; // x or y
 		public TileView tile;
 		public float from, to, axialDelta;
@@ -539,6 +544,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 			this.from = from;
 			this.to = to;
 			this.direction = direction;
+			this.originalRect = rectForCoordinate(tile.coordinate);
 		}
 
 		/**
@@ -558,7 +564,6 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 		 *         original position.
 		 */
 		public float originalPosition() {
-			Rect originalRect = rectForCoordinate(tile.coordinate);
 			if (direction == Direction.X) {
 				return originalRect.left;
 			} else if (direction == Direction.Y) {
