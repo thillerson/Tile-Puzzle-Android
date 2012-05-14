@@ -1,8 +1,10 @@
 package cz.destil.sliderpuzzle.ui;
 
-import cz.destil.sliderpuzzle.data.Coordinate;
 import android.content.Context;
+import android.os.Build;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
+import cz.destil.sliderpuzzle.data.Coordinate;
 
 /**
  * 
@@ -57,6 +59,54 @@ public class TileView extends ImageView {
 
 	public boolean isBelow(TileView tile) {
 		return coordinate.isBelow(tile.coordinate);
+	}
+
+	/**
+	 * Sets X Y coordinate for the view - works on all Android versions.
+	 * 
+	 * @param x
+	 * @param y
+	 */
+	public void setXY(float x, float y) {
+		if (Build.VERSION.SDK_INT >= 11) {
+			// native and more precise
+			setX(x);
+			setY(y);
+		} else {
+			// emulated on older versions of Android
+			RelativeLayout.LayoutParams params = (android.widget.RelativeLayout.LayoutParams) getLayoutParams();
+			params.leftMargin = (int) x;
+			params.topMargin = (int) y;
+			setLayoutParams(params);
+		}
+	}
+
+	/**
+	 * @return get x position for all versions of Android
+	 */
+	public float getXPos() {
+		if (Build.VERSION.SDK_INT >= 11) {
+			// native and more precise
+			return getX();
+		} else {
+			// emulated on older versions of Android
+			RelativeLayout.LayoutParams params = (android.widget.RelativeLayout.LayoutParams) getLayoutParams();
+			return params.leftMargin;
+		}
+	}
+
+	/**
+	 * @return get y position for all versions of Android
+	 */
+	public float getYPos() {
+		if (Build.VERSION.SDK_INT >= 11) {
+			// native and more precise
+			return getY();
+		} else {
+			// emulated on older versions of Android
+			RelativeLayout.LayoutParams params = (android.widget.RelativeLayout.LayoutParams) getLayoutParams();
+			return params.topMargin;
+		}
 	}
 
 }

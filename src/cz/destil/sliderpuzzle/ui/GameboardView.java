@@ -3,10 +3,6 @@ package cz.destil.sliderpuzzle.ui;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-import android.animation.Animator;
-import android.animation.Animator.AnimatorListener;
-import android.animation.FloatEvaluator;
-import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.PointF;
@@ -15,12 +11,17 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import android.widget.RelativeLayout;
+
+import com.actionbarsherlock.internal.nineoldandroids.animation.Animator;
+import com.actionbarsherlock.internal.nineoldandroids.animation.Animator.AnimatorListener;
+import com.actionbarsherlock.internal.nineoldandroids.animation.FloatEvaluator;
+import com.actionbarsherlock.internal.nineoldandroids.animation.ObjectAnimator;
+
 import cz.destil.sliderpuzzle.R;
 import cz.destil.sliderpuzzle.data.Coordinate;
 import cz.destil.sliderpuzzle.util.TileSlicer;
@@ -220,7 +221,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 		movedTile.numberOfDrags++;
 		for (GameTileMotionDescriptor descriptor : currentMotionDescriptors) {
 			tile = descriptor.tile;
-			Pair<Float, Float> xy = getXY(tile, dxEvent, dyEvent, descriptor.direction);
+			Pair<Float, Float> xy = getXYFromEvent(tile, dxEvent, dyEvent, descriptor.direction); 			
 			// detect if this move is valid
 			RectF candidateRect = new RectF(xy.first, xy.second, xy.first + tile.getWidth(), xy.second
 					+ tile.getHeight());
@@ -240,9 +241,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 			// perform move for all moved tiles in the descriptors
 			for (GameTileMotionDescriptor descriptor : currentMotionDescriptors) {
 				tile = descriptor.tile;
-				Pair<Float, Float> xy = getXY(descriptor.tile, dxEvent, dyEvent, descriptor.direction);
-				tile.setX(xy.first);
-				tile.setY(xy.second);
+				Pair<Float, Float> xy = getXYFromEvent(tile, dxEvent, dyEvent, descriptor.direction);
+				tile.setXY(xy.first, xy.second);
 			}
 		}
 	}
@@ -260,15 +260,15 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	 *            x or y direction
 	 * @return pair of first x coordinates, second y coordinates
 	 */
-	private Pair<Float, Float> getXY(TileView tile, float dxEvent, float dyEvent, Direction direction) {
+	private Pair<Float, Float> getXYFromEvent(TileView tile, float dxEvent, float dyEvent, Direction direction) {
 		float dxTile = 0, dyTile = 0;
 		if (direction == Direction.X) {
-			dxTile = tile.getX() + dxEvent;
-			dyTile = tile.getY();
+			dxTile = tile.getXPos() + dxEvent;
+			dyTile = tile.getYPos();
 		}
 		if (direction == Direction.Y) {
-			dyTile = tile.getY() + dyEvent;
-			dxTile = tile.getX();
+			dyTile = tile.getYPos() + dyEvent;
+			dxTile = tile.getXPos();
 		}
 		return new Pair<Float, Float>(dxTile, dyTile);
 	}
@@ -286,8 +286,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 		RectF otherTileRect;
 		for (TileView otherTile : tilesToCheck) {
 			if (!otherTile.isEmpty() && otherTile != tile) {
-				otherTileRect = new RectF(otherTile.getX(), otherTile.getY(), otherTile.getX() + otherTile.getWidth(),
-						otherTile.getY() + otherTile.getHeight());
+				otherTileRect = new RectF(otherTile.getXPos(), otherTile.getYPos(), otherTile.getXPos() + otherTile.getWidth(),
+						otherTile.getYPos() + otherTile.getHeight());
 				if (RectF.intersects(otherTileRect, candidateRect)) {
 					return true;
 				}
@@ -301,8 +301,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	 * when valid tile is clicked or is dragged over 50%.
 	 */
 	private void animateTilesToEmptySpace() {
-		emptyTile.setX(movedTile.getX());
-		emptyTile.setY(movedTile.getY());
+		emptyTile.setXY(movedTile.getXPos(), movedTile.getYPos());
 		emptyTile.coordinate = movedTile.coordinate;
 		ObjectAnimator animator;
 		for (final GameTileMotionDescriptor motionDescriptor : currentMotionDescriptors) {
@@ -322,8 +321,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 
 				public void onAnimationEnd(Animator animation) {
 					motionDescriptor.tile.coordinate = motionDescriptor.finalCoordinate;
-					motionDescriptor.tile.setX(motionDescriptor.finalRect.left);
-					motionDescriptor.tile.setY(motionDescriptor.finalRect.top);
+					motionDescriptor.tile.setXY(motionDescriptor.finalRect.left, motionDescriptor.finalRect.top);
 				}
 			});
 			animator.start();
@@ -383,8 +381,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 				finalCoordinate = new Coordinate(tile.coordinate.row, i - 1);
 				currentRect = rectForCoordinate(foundTile.coordinate);
 				finalRect = rectForCoordinate(finalCoordinate);
-				axialDelta = Math.abs(foundTile.getX() - currentRect.left);
-				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.X, foundTile.getX(),
+				axialDelta = Math.abs(foundTile.getXPos() - currentRect.left);
+				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.X, foundTile.getXPos(),
 						finalRect.left);
 				motionDescriptor.finalCoordinate = finalCoordinate;
 				motionDescriptor.finalRect = finalRect;
@@ -399,8 +397,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 				finalCoordinate = new Coordinate(tile.coordinate.row, i + 1);
 				currentRect = rectForCoordinate(foundTile.coordinate);
 				finalRect = rectForCoordinate(finalCoordinate);
-				axialDelta = Math.abs(foundTile.getX() - currentRect.left);
-				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.X, foundTile.getX(),
+				axialDelta = Math.abs(foundTile.getXPos() - currentRect.left);
+				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.X, foundTile.getXPos(),
 						finalRect.left);
 				motionDescriptor.finalCoordinate = finalCoordinate;
 				motionDescriptor.finalRect = finalRect;
@@ -415,8 +413,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 				finalCoordinate = new Coordinate(i + 1, tile.coordinate.column);
 				currentRect = rectForCoordinate(foundTile.coordinate);
 				finalRect = rectForCoordinate(finalCoordinate);
-				axialDelta = Math.abs(foundTile.getY() - currentRect.top);
-				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.Y, foundTile.getY(), finalRect.top);
+				axialDelta = Math.abs(foundTile.getYPos() - currentRect.top);
+				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.Y, foundTile.getYPos(), finalRect.top);
 				motionDescriptor.finalCoordinate = finalCoordinate;
 				motionDescriptor.finalRect = finalRect;
 				motionDescriptor.axialDelta = axialDelta;
@@ -430,8 +428,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 				finalCoordinate = new Coordinate(i - 1, tile.coordinate.column);
 				currentRect = rectForCoordinate(foundTile.coordinate);
 				finalRect = rectForCoordinate(finalCoordinate);
-				axialDelta = Math.abs(foundTile.getY() - currentRect.top);
-				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.Y, foundTile.getY(), finalRect.top);
+				axialDelta = Math.abs(foundTile.getYPos() - currentRect.top);
+				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.Y, foundTile.getYPos(), finalRect.top);
 				motionDescriptor.finalCoordinate = finalCoordinate;
 				motionDescriptor.finalRect = finalRect;
 				motionDescriptor.axialDelta = axialDelta;
@@ -548,9 +546,9 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 		 */
 		public float currentPosition() {
 			if (direction == Direction.X) {
-				return tile.getX();
+				return tile.getXPos();
 			} else if (direction == Direction.Y) {
-				return tile.getY();
+				return tile.getYPos();
 			}
 			return 0;
 		}
