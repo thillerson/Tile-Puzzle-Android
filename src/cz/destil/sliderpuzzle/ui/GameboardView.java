@@ -70,7 +70,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	}
 
 	/**
-	 * Detect gameboard size and tile size based on current screen.
+	 * Detect game board size and tile size based on current screen.
 	 */
 	private void determineGameboardSizes() {
 		int viewWidth = getWidth();
@@ -90,7 +90,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	}
 
 	/**
-	 * Fills gameboard with tiles sliced from the globe image.
+	 * Fills game board with tiles sliced from the globe image.
 	 */
 	public void fillTiles() {
 		removeAllViews();
@@ -98,12 +98,13 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 		Drawable globe = getResources().getDrawable(R.drawable.globe);
 		Bitmap original = ((BitmapDrawable) globe).getBitmap();
 		TileSlicer tileSlicer = new TileSlicer(original, GRID_SIZE, getContext());
-		// fill gameboard with slices
+		// order slices
 		if (tileOrder == null) {
 			tileSlicer.randomizeSlices();
 		} else {
 			tileSlicer.setSliceOrder(tileOrder);
 		}
+		// fill game board with slices
 		tiles = new ArrayList<TileView>();
 		for (int rowI = 0; rowI < GRID_SIZE; rowI++) {
 			for (int colI = 0; colI < GRID_SIZE; colI++) {
@@ -124,7 +125,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	}
 
 	/**
-	 * Places tile on appropriate place in the layout
+	 * Places tile on appropriate place in the layout.
 	 * 
 	 * @param tile
 	 *            Tile to place
@@ -139,27 +140,28 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	}
 
 	/**
-	 * Handling of touch events. High-level logic for moving tiles on gameboard.
+	 * Handling of touch events. High-level logic for moving tiles on the game
+	 * board.
 	 */
 	public boolean onTouch(View v, MotionEvent event) {
 		TileView touchedTile = (TileView) v;
 		if (touchedTile.isEmpty() || !touchedTile.isInRowOrColumnOf(emptyTile)) {
 			return false;
 		} else {
-			// start of the gesture
 			if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+				// start of the gesture
 				movedTile = touchedTile;
 				currentMotionDescriptors = getTilesBetweenEmptyTileAndTile(movedTile);
 				movedTile.numberOfDrags = 0;
-				// during the gesture
 			} else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
+				// during the gesture
 				if (lastDragPoint != null) {
 					followFinger(event);
 				}
 				lastDragPoint = new PointF(event.getRawX(), event.getRawY());
-				// end of gesture
 			} else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
-				// reload the motion descriptors in case of position change.
+				// end of gesture
+				// reload the motion descriptors in case of position change
 				currentMotionDescriptors = getTilesBetweenEmptyTileAndTile(movedTile);
 				// if drag was over 50% or it's click, do the move
 				if (lastDragMovedAtLeastHalfWay() || isClick()) {
@@ -195,7 +197,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	 */
 	private boolean isClick() {
 		if (lastDragPoint == null) {
-			return true; // no drag
+			return true; // no drags
 		}
 		// just small amount of MOVE events counts as click
 		if (currentMotionDescriptors != null && currentMotionDescriptors.size() > 0 && movedTile.numberOfDrags < 10) {
@@ -239,7 +241,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 			impossibleMove = impossibleMove && (!candidateRectInGameboard || collides);
 		}
 		if (!impossibleMove) {
-			// perform move for all moved tiles in the descriptors
+			// perform the move for all moved tiles in the descriptors
 			for (GameTileMotionDescriptor descriptor : currentMotionDescriptors) {
 				tile = descriptor.tile;
 				Pair<Float, Float> xy = getXYFromEvent(tile, dxEvent, dyEvent, descriptor.direction);
@@ -252,7 +254,6 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	 * Computes new x,y coordinates for given tile in given direction (x or y).
 	 * 
 	 * @param tile
-	 *            tile to check
 	 * @param dxEvent
 	 *            change of x coordinate from touch gesture
 	 * @param dyEvent

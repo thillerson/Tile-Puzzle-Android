@@ -13,8 +13,8 @@ import cz.destil.sliderpuzzle.ui.TileView;
 
 /**
  * 
- * Slices original bitmap into tiles and adds border. Provides randomized access
- * to tiles.
+ * Slices original bitmap into tiles and adds border. Provides randomized or
+ * ordered access to tiles.
  * 
  * Based on
  * https://github.com/thillerson/Android-Slider-Puzzle/blob/master/src/com
@@ -24,7 +24,6 @@ import cz.destil.sliderpuzzle.ui.TileView;
  */
 public class TileSlicer {
 
-	public static final int RANDOM_SLICE = -1;
 	private Bitmap original;
 	private int tileSize, gridSize;
 	private List<Bitmap> slices;
@@ -80,15 +79,15 @@ public class TileSlicer {
 				}
 			}
 		}
-		// remove original bitmap from memory
+		// remove reference to original bitmap
 		original = null;
 	}
 
 	/**
-	 * Randomizes slices in case no previous instance is available.
+	 * Randomizes slices in case no previous state is available.
 	 */
 	public void randomizeSlices() {
-		// randomize first 15 slices
+		// randomize first slices
 		Collections.shuffle(slices);
 		// last one is empty slice
 		slices.add(null);
@@ -117,13 +116,9 @@ public class TileSlicer {
 	}
 
 	/**
-	 * Serves slice and frees it from memory
+	 * Serves slice and creates a tile for gameboard.
 	 * 
-	 * @param index
-	 *            index of the slice. Serves random slice if
-	 *            TileSlicer.RANDOM_SLICE.
-	 * @return TileView with the image or empty tile if there are no such
-	 *         slices.
+	 * @return TileView with the image or null if there are no more slices
 	 */
 	public TileView getTile() {
 		TileView tile = null;

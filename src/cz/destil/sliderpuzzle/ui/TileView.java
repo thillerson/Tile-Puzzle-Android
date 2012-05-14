@@ -62,7 +62,7 @@ public class TileView extends ImageView {
 	}
 
 	/**
-	 * Sets X Y coordinate for the view - works on all Android versions.
+	 * Sets X Y coordinate for the view - works for all Android versions.
 	 * 
 	 * @param x
 	 * @param y
