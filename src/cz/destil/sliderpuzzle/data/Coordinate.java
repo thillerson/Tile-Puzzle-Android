@@ -40,4 +40,9 @@ public class Coordinate {
 	public boolean isBelow(Coordinate coordinate) {
 		return sharesAxisWith(coordinate) && (row > coordinate.row);
 	}
+	
+	@Override
+	public String toString() {
+		return "[R: "+row+" C:"+column+"]";
+	}
 }

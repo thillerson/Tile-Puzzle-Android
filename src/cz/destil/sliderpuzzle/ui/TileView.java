@@ -15,12 +15,12 @@ import android.widget.ImageView;
  * 
  * @author David Vavra
  */
-public class GameTile extends ImageView {
+public class TileView extends ImageView {
 
 	public Coordinate coordinate;
 	private boolean empty;
 
-	public GameTile(Context context, Coordinate coordinate) {
+	public TileView(Context context, Coordinate coordinate) {
 		super(context);
 		this.coordinate = coordinate;
 	}
@@ -37,23 +37,23 @@ public class GameTile extends ImageView {
 		}
 	}
 
-	public boolean isInRowOrColumnOf(GameTile otherTile) {
+	public boolean isInRowOrColumnOf(TileView otherTile) {
 		return (coordinate.sharesAxisWith(otherTile.coordinate));
 	}
 
-	public boolean isToRightOf(GameTile tile) {
+	public boolean isToRightOf(TileView tile) {
 		return coordinate.isToRightOf(tile.coordinate);
 	}
 
-	public boolean isToLeftOf(GameTile tile) {
+	public boolean isToLeftOf(TileView tile) {
 		return coordinate.isToLeftOf(tile.coordinate);
 	}
 
-	public boolean isAbove(GameTile tile) {
+	public boolean isAbove(TileView tile) {
 		return coordinate.isAbove(tile.coordinate);
 	}
 
-	public boolean isBelow(GameTile tile) {
+	public boolean isBelow(TileView tile) {
 		return coordinate.isBelow(tile.coordinate);
 	}
 

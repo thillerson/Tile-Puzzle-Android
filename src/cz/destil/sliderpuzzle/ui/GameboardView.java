@@ -37,13 +37,15 @@ import cz.destil.sliderpuzzle.util.TileSlicer;
  */
 public class GameboardView extends RelativeLayout implements OnTouchListener {
 
+	@SuppressWarnings("unused")
+	private static final String TAG = "GameboardView";
 	public static final int GRID_SIZE = 4; // 4x4
-	private RectF gameboardRect;
-	private ArrayList<GameTile> tiles;
-	private GameTile emptyTile, movedTile;
-	private boolean boardCreated;
-	private PointF lastDragPoint;
 	private int tileSize;
+	private ArrayList<TileView> tiles;
+	private TileView emptyTile, movedTile;
+	private boolean boardCreated;
+	private RectF gameboardRect;
+	private PointF lastDragPoint;
 	private ArrayList<GameTileMotionDescriptor> currentMotionDescriptors;
 
 	public GameboardView(Context context, AttributeSet attrSet) {
@@ -59,12 +61,12 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 			Drawable globe = getResources().getDrawable(R.drawable.globe);
 			Bitmap original = ((BitmapDrawable) globe).getBitmap();
 			TileSlicer tileSlicer = new TileSlicer(original, GRID_SIZE);
-			
+
 			fillTiles(tileSlicer);
 			boardCreated = true;
 		}
 	}
-	
+
 	/**
 	 * Detect gameboard size and tile size based on current screen.
 	 */
@@ -89,83 +91,105 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 
 	/**
 	 * Fills gameboard with tiles
-	 * @param tileSlicer TileSlicer with loaded image
+	 * 
+	 * @param tileSlicer
+	 *            TileSlicer with loaded image
 	 */
 	private void fillTiles(TileSlicer tileSlicer) {
-		tiles = new ArrayList<GameTile>();
+		tiles = new ArrayList<TileView>();
 		for (int rowI = 0; rowI < GRID_SIZE; rowI++) {
 			for (int colI = 0; colI < GRID_SIZE; colI++) {
-				GameTile tile = new GameTile(getContext(), new Coordinate(rowI, colI));
-				tile.setOnTouchListener(this);
+				TileView tile = new TileView(getContext(), new Coordinate(rowI, colI));
 				if (rowI == GRID_SIZE - 1 && colI == GRID_SIZE - 1) {
 					// empty tile
 					emptyTile = tile;
 					tile.setEmpty(true);
 				} else {
 					// tile with image - set random tile from slicer
-					tile.setImageBitmap(tileSlicer.getRandomSlice());				
+					tile.setImageBitmap(tileSlicer.getRandomSlice());
 				}
 				placeTile(tile);
 				tiles.add(tile);
 			}
 		}
 	}
-	
+
 	/**
 	 * Places tile on appropriate place in the layout
-	 * @param tile Tile to place
+	 * 
+	 * @param tile
+	 *            Tile to place
 	 */
-	private void placeTile(GameTile tile) {
+	private void placeTile(TileView tile) {
 		Rect tileRect = rectForCoordinate(tile.coordinate);
 		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(tileSize, tileSize);
 		params.topMargin = tileRect.top;
 		params.leftMargin = tileRect.left;
-		addView(tile, params);	
+		addView(tile, params);
+		tile.setOnTouchListener(this);
 	}
 
+	/**
+	 * Handling of touch events. High-level logic for moving tiles on gameboard.
+	 */
 	public boolean onTouch(View v, MotionEvent event) {
-		try {
-			GameTile touchedTile = (GameTile) v;
-			if (touchedTile.isEmpty() || !touchedTile.isInRowOrColumnOf(emptyTile)) {
-				return false;
-			} else {
-				if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-					movedTile = touchedTile;
-					currentMotionDescriptors = getTilesBetweenEmptyTileAndTile(movedTile);
-				} else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
-					if (lastDragPoint != null) {
-						moveDraggedTilesByMotionEventDelta(event);
-					}
-					lastDragPoint = new PointF(event.getRawX(), event.getRawY());
-				} else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
-					// reload the motion descriptors in case of position change.
-					currentMotionDescriptors = getTilesBetweenEmptyTileAndTile(movedTile);
-					// if last move was a dragging move and the move was over
-					// half way to the empty tile
-					if (lastDragPoint != null && lastDragMovedAtLeastHalfWay()) {
-						animateCurrentMovedTilesToEmptySpace();
-						// otherwise, if it wasn't a drag, do the move
-					} else if (lastDragPoint == null) {
-						animateCurrentMovedTilesToEmptySpace();
-						// Animate tiles back to origin
-					} else {
-						animateMovedTilesBackToOrigin();
-					}
-					currentMotionDescriptors = null;
-					lastDragPoint = null;
-					movedTile = null;
-				}
-				return true;
-			}
-		} catch (ClassCastException e) {
+		TileView touchedTile = (TileView) v;
+		if (touchedTile.isEmpty() || !touchedTile.isInRowOrColumnOf(emptyTile)) {
 			return false;
+		} else {
+			// start of the gesture
+			if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+				movedTile = touchedTile;
+				currentMotionDescriptors = getTilesBetweenEmptyTileAndTile(movedTile);
+				// during the gesture
+			} else if (event.getActionMasked() == MotionEvent.ACTION_MOVE) {
+				if (lastDragPoint != null) {
+					moveDraggedTilesByMotionEventDelta(event);
+				}
+				lastDragPoint = new PointF(event.getRawX(), event.getRawY());
+				// end of gesture
+			} else if (event.getActionMasked() == MotionEvent.ACTION_UP) {
+				// reload the motion descriptors in case of position change.
+				currentMotionDescriptors = getTilesBetweenEmptyTileAndTile(movedTile);
+				// if drag was over 50%, do the move
+				if (lastDragPoint != null && lastDragMovedAtLeastHalfWay()) {
+					animateCurrentMovedTilesToEmptySpace();
+					// if it was a click, do the move
+				} else if (lastDragPoint == null || lastDragMovedMinimally()) {
+					animateCurrentMovedTilesToEmptySpace();
+					// if it was a drag less than 50%, animate tiles back
+				} else {
+					animateMovedTilesBackToOrigin();
+				}
+				currentMotionDescriptors = null;
+				lastDragPoint = null;
+				movedTile = null;
+			}
+			return true;
 		}
 	}
 
-	protected boolean lastDragMovedAtLeastHalfWay() {
+	/**
+	 * @return Whether last drag moved with the tile more than 50% of its size
+	 */
+	private boolean lastDragMovedAtLeastHalfWay() {
 		if (currentMotionDescriptors != null && currentMotionDescriptors.size() > 0) {
 			GameTileMotionDescriptor firstMotionDescriptor = currentMotionDescriptors.get(0);
 			if (firstMotionDescriptor.axialDelta > tileSize / 2) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @return Whether last drag moved just a little = involuntary move during
+	 *         click
+	 */
+	private boolean lastDragMovedMinimally() {
+		if (currentMotionDescriptors != null && currentMotionDescriptors.size() > 0) {
+			GameTileMotionDescriptor firstMotionDescriptor = currentMotionDescriptors.get(0);
+			if (firstMotionDescriptor.axialDelta < tileSize / 20) {
 				return true;
 			}
 		}
@@ -177,14 +201,14 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		float dxTile, dyTile;
 		float dxEvent = event.getRawX() - lastDragPoint.x;
 		float dyEvent = event.getRawY() - lastDragPoint.y;
-		GameTile tile;
+		TileView tile;
 		for (GameTileMotionDescriptor gameTileMotionDescriptor : currentMotionDescriptors) {
 			tile = gameTileMotionDescriptor.tile;
 			dxTile = tile.getX() + dxEvent;
 			dyTile = tile.getY() + dyEvent;
 
 			RectF candidateRect = new RectF(dxTile, dyTile, dxTile + tile.getWidth(), dyTile + tile.getHeight());
-			HashSet<GameTile> tilesToCheck = null;
+			HashSet<TileView> tilesToCheck = null;
 			if (tile.coordinate.row == emptyTile.coordinate.row) {
 				tilesToCheck = allTilesInRow(tile.coordinate.row);
 			} else if (tile.coordinate.column == emptyTile.coordinate.column) {
@@ -212,10 +236,10 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		}
 	}
 
-	private boolean candidateRectForTileCollidesWithAnyTileInSet(RectF candidateRect, GameTile tile,
-			HashSet<GameTile> set) {
+	private boolean candidateRectForTileCollidesWithAnyTileInSet(RectF candidateRect, TileView tile,
+			HashSet<TileView> set) {
 		RectF otherTileRect;
-		for (GameTile otherTile : set) {
+		for (TileView otherTile : set) {
 			if (!otherTile.isEmpty() && otherTile != tile) {
 				otherTileRect = new RectF(otherTile.getX(), otherTile.getY(), otherTile.getX() + otherTile.getWidth(),
 						otherTile.getY() + otherTile.getHeight());
@@ -283,10 +307,10 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		}
 	}
 
-	private ArrayList<GameTileMotionDescriptor> getTilesBetweenEmptyTileAndTile(GameTile tile) {
+	private ArrayList<GameTileMotionDescriptor> getTilesBetweenEmptyTileAndTile(TileView tile) {
 		ArrayList<GameTileMotionDescriptor> descriptors = new ArrayList<GameTileMotionDescriptor>();
 		Coordinate coordinate, finalCoordinate;
-		GameTile foundTile;
+		TileView foundTile;
 		GameTileMotionDescriptor motionDescriptor;
 		Rect finalRect, currentRect;
 		float axialDelta;
@@ -350,8 +374,8 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return descriptors;
 	}
 
-	private GameTile getTileAtCoordinate(Coordinate coordinate) {
-		for (GameTile tile : tiles) {
+	private TileView getTileAtCoordinate(Coordinate coordinate) {
+		for (TileView tile : tiles) {
 			if (tile.coordinate.matches(coordinate)) {
 				return tile;
 			}
@@ -359,9 +383,9 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return null;
 	}
 
-	private HashSet<GameTile> allTilesInRow(int row) {
-		HashSet<GameTile> tilesInRow = new HashSet<GameTile>();
-		for (GameTile tile : tiles) {
+	private HashSet<TileView> allTilesInRow(int row) {
+		HashSet<TileView> tilesInRow = new HashSet<TileView>();
+		for (TileView tile : tiles) {
 			if (tile.coordinate.row == row) {
 				tilesInRow.add(tile);
 			}
@@ -369,9 +393,9 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 		return tilesInRow;
 	}
 
-	private HashSet<GameTile> allTilesInColumn(int column) {
-		HashSet<GameTile> tilesInColumn = new HashSet<GameTile>();
-		for (GameTile tile : tiles) {
+	private HashSet<TileView> allTilesInColumn(int column) {
+		HashSet<TileView> tilesInColumn = new HashSet<TileView>();
+		for (TileView tile : tiles) {
 			if (tile.coordinate.column == column) {
 				tilesInColumn.add(tile);
 			}
@@ -391,11 +415,11 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 
 		public Rect finalRect;
 		public String property;
-		public GameTile tile;
+		public TileView tile;
 		public float from, to, axialDelta;
 		public Coordinate finalCoordinate;
 
-		public GameTileMotionDescriptor(GameTile tile, String property, float from, float to) {
+		public GameTileMotionDescriptor(TileView tile, String property, float from, float to) {
 			super();
 			this.tile = tile;
 			this.from = from;
