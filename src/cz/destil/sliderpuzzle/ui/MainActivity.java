@@ -4,7 +4,6 @@ import java.util.LinkedList;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 
 import com.actionbarsherlock.app.SherlockActivity;
 import com.actionbarsherlock.view.Menu;
@@ -33,7 +32,6 @@ public class MainActivity extends SherlockActivity {
 		@SuppressWarnings({ "deprecation", "unchecked" })
 		final LinkedList<Integer> tileOrder = (LinkedList<Integer>) getLastNonConfigurationInstance();
 		if (tileOrder != null) {
-			Log.d("tile locations",tileOrder.toString());
 			gameBoard.setTileOrder(tileOrder);
 		}
 	}
@@ -63,7 +61,6 @@ public class MainActivity extends SherlockActivity {
 	@Override
 	public Object onRetainNonConfigurationInstance() {
 		// preserve state when rotated
-		Log.d("tile locations",gameBoard.getTileOrder().toString());
 		return gameBoard.getTileOrder();
 	}
 }

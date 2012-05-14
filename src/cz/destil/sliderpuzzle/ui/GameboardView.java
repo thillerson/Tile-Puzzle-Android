@@ -15,6 +15,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
+import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
@@ -38,6 +39,11 @@ import cz.destil.sliderpuzzle.util.TileSlicer;
 public class GameBoardView extends RelativeLayout implements OnTouchListener {
 
 	public static final int GRID_SIZE = 4; // 4x4
+
+	public enum Direction {
+		X, Y
+	}; // movement along x or y axis
+
 	private int tileSize;
 	private ArrayList<TileView> tiles;
 	private TileView emptyTile, movedTile;
@@ -205,16 +211,14 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	 */
 	private void followFinger(MotionEvent event) {
 		boolean impossibleMove = true;
-		float dxTile, dyTile;
 		float dxEvent = event.getRawX() - lastDragPoint.x;
 		float dyEvent = event.getRawY() - lastDragPoint.y;
 		TileView tile;
-		for (GameTileMotionDescriptor gameTileMotionDescriptor : currentMotionDescriptors) {
-			tile = gameTileMotionDescriptor.tile;
-			dxTile = tile.getX() + dxEvent;
-			dyTile = tile.getY() + dyEvent;
+		for (GameTileMotionDescriptor descriptor : currentMotionDescriptors) {
+			tile = descriptor.tile;
+			Pair<Float, Float> xy = getXY(tile, dxEvent, dyEvent, descriptor.direction);
 			// detect if this move is valid
-			RectF candidateRect = new RectF(dxTile, dyTile, dxTile + tile.getWidth(), dyTile + tile.getHeight());
+			RectF candidateRect = new RectF(xy.first, xy.second, xy.first + tile.getWidth(), xy.second + tile.getHeight());
 			ArrayList<TileView> tilesToCheck = null;
 			if (tile.coordinate.row == emptyTile.coordinate.row) {
 				tilesToCheck = allTilesInRow(tile.coordinate.row);
@@ -229,19 +233,34 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 		}
 		if (!impossibleMove) {
 			// perform move for all moved tiles in the descriptors
-			for (GameTileMotionDescriptor gameTileMotionDescriptor : currentMotionDescriptors) {
-				tile = gameTileMotionDescriptor.tile;
-				dxTile = tile.getX() + dxEvent;
-				dyTile = tile.getY() + dyEvent;
-				if (!impossibleMove) {
-					if (tile.coordinate.row == emptyTile.coordinate.row) {
-						tile.setX(dxTile);
-					} else if (tile.coordinate.column == emptyTile.coordinate.column) {
-						tile.setY(dyTile);
-					}
-				}
+			for (GameTileMotionDescriptor descriptor : currentMotionDescriptors) {
+				tile = descriptor.tile;
+				Pair<Float, Float> xy = getXY(descriptor.tile, dxEvent, dyEvent, descriptor.direction);
+				tile.setX(xy.first);
+				tile.setY(xy.second);
 			}
 		}
+	}
+
+	/**
+	 * Computes new x,y coordinates for given tile in given direction (x or y).
+	 * @param tile tile to check
+	 * @param dxEvent change of x coordinate from touch gesture
+	 * @param dyEvent change of y coordinate from touch gesture
+	 * @param direction x or y direction
+	 * @return pair of first x coordinates, second y coordinates
+	 */
+	private Pair<Float, Float> getXY(TileView tile, float dxEvent, float dyEvent, Direction direction) {
+		float dxTile = 0, dyTile = 0;
+		if (direction == Direction.X) {
+			dxTile = tile.getX() + dxEvent;
+			dyTile = tile.getY();
+		}
+		if (direction == Direction.Y) {
+			dyTile = tile.getY() + dyEvent;
+			dxTile = tile.getX();
+		}
+		return new Pair<Float, Float>(dxTile, dyTile);
 	}
 
 	/**
@@ -277,8 +296,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 		emptyTile.coordinate = movedTile.coordinate;
 		ObjectAnimator animator;
 		for (final GameTileMotionDescriptor motionDescriptor : currentMotionDescriptors) {
-			animator = ObjectAnimator.ofObject(motionDescriptor.tile, motionDescriptor.property, new FloatEvaluator(),
-					motionDescriptor.from, motionDescriptor.to);
+			animator = ObjectAnimator.ofObject(motionDescriptor.tile, motionDescriptor.direction.toString(),
+					new FloatEvaluator(), motionDescriptor.from, motionDescriptor.to);
 			animator.setDuration(16);
 			animator.addListener(new AnimatorListener() {
 
@@ -309,7 +328,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 		ObjectAnimator animator;
 		if (currentMotionDescriptors != null) {
 			for (final GameTileMotionDescriptor motionDescriptor : currentMotionDescriptors) {
-				animator = ObjectAnimator.ofObject(motionDescriptor.tile, motionDescriptor.property,
+				animator = ObjectAnimator.ofObject(motionDescriptor.tile, motionDescriptor.direction.toString(),
 						new FloatEvaluator(), motionDescriptor.currentPosition(), motionDescriptor.originalPosition());
 				animator.setDuration(16);
 				animator.addListener(new AnimatorListener() {
@@ -355,7 +374,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 				currentRect = rectForCoordinate(foundTile.coordinate);
 				finalRect = rectForCoordinate(finalCoordinate);
 				axialDelta = Math.abs(foundTile.getX() - currentRect.left);
-				motionDescriptor = new GameTileMotionDescriptor(foundTile, "x", foundTile.getX(), finalRect.left);
+				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.X, foundTile.getX(),
+						finalRect.left);
 				motionDescriptor.finalCoordinate = finalCoordinate;
 				motionDescriptor.finalRect = finalRect;
 				motionDescriptor.axialDelta = axialDelta;
@@ -370,7 +390,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 				currentRect = rectForCoordinate(foundTile.coordinate);
 				finalRect = rectForCoordinate(finalCoordinate);
 				axialDelta = Math.abs(foundTile.getX() - currentRect.left);
-				motionDescriptor = new GameTileMotionDescriptor(foundTile, "x", foundTile.getX(), finalRect.left);
+				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.X, foundTile.getX(),
+						finalRect.left);
 				motionDescriptor.finalCoordinate = finalCoordinate;
 				motionDescriptor.finalRect = finalRect;
 				motionDescriptor.axialDelta = axialDelta;
@@ -385,7 +406,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 				currentRect = rectForCoordinate(foundTile.coordinate);
 				finalRect = rectForCoordinate(finalCoordinate);
 				axialDelta = Math.abs(foundTile.getY() - currentRect.top);
-				motionDescriptor = new GameTileMotionDescriptor(foundTile, "y", foundTile.getY(), finalRect.top);
+				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.Y, foundTile.getY(), finalRect.top);
 				motionDescriptor.finalCoordinate = finalCoordinate;
 				motionDescriptor.finalRect = finalRect;
 				motionDescriptor.axialDelta = axialDelta;
@@ -400,7 +421,7 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 				currentRect = rectForCoordinate(foundTile.coordinate);
 				finalRect = rectForCoordinate(finalCoordinate);
 				axialDelta = Math.abs(foundTile.getY() - currentRect.top);
-				motionDescriptor = new GameTileMotionDescriptor(foundTile, "y", foundTile.getY(), finalRect.top);
+				motionDescriptor = new GameTileMotionDescriptor(foundTile, Direction.Y, foundTile.getY(), finalRect.top);
 				motionDescriptor.finalCoordinate = finalCoordinate;
 				motionDescriptor.finalRect = finalRect;
 				motionDescriptor.axialDelta = axialDelta;
@@ -486,7 +507,8 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	/**
 	 * Sets tile locations from previous state.
 	 * 
-	 * @param tileLocations list of integers marking order
+	 * @param tileLocations
+	 *            list of integers marking order
 	 */
 	public void setTileOrder(LinkedList<Integer> tileLocations) {
 		this.tileOrder = tileLocations;
@@ -498,26 +520,26 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 	public class GameTileMotionDescriptor {
 
 		public Rect finalRect;
-		public String property; // "x" or "y"
+		public Direction direction; // x or y
 		public TileView tile;
 		public float from, to, axialDelta;
 		public Coordinate finalCoordinate;
 
-		public GameTileMotionDescriptor(TileView tile, String property, float from, float to) {
+		public GameTileMotionDescriptor(TileView tile, Direction direction, float from, float to) {
 			super();
 			this.tile = tile;
 			this.from = from;
 			this.to = to;
-			this.property = property;
+			this.direction = direction;
 		}
 
 		/**
 		 * @return current position of the tile
 		 */
 		public float currentPosition() {
-			if (property.equals("x")) {
+			if (direction == Direction.X) {
 				return tile.getX();
-			} else if (property.equals("y")) {
+			} else if (direction == Direction.Y) {
 				return tile.getY();
 			}
 			return 0;
@@ -529,9 +551,9 @@ public class GameBoardView extends RelativeLayout implements OnTouchListener {
 		 */
 		public float originalPosition() {
 			Rect originalRect = rectForCoordinate(tile.coordinate);
-			if (property.equals("x")) {
+			if (direction == Direction.X) {
 				return originalRect.left;
-			} else if (property.equals("y")) {
+			} else if (direction == Direction.Y) {
 				return originalRect.top;
 			}
 			return 0;
