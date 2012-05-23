@@ -33,8 +33,8 @@ public class GameboardView extends RelativeLayout implements OnTouchListener {
 	
 	public GameboardView(Context context, AttributeSet attrSet) {
 		super(context, attrSet);
-		Drawable globe = getResources().getDrawable(R.drawable.globe);
-		Bitmap original = ((BitmapDrawable)globe).getBitmap();
+		Drawable img = getResources().getDrawable(R.drawable.android);
+		Bitmap original = ((BitmapDrawable)img).getBitmap();
 		tileServer = new TileServer(original, 4, 4, 68);
 		
 		createTiles();
